@@ -1,0 +1,151 @@
+/* ============================================================
+   DESIGN TOKENS — change these to retheme the entire app
+   ============================================================ */
+:root {
+  /* Core palette */
+  --color-base:        #aef49f;   /* page background #142a0f */
+  --color-surface:     #dfe7f3;
+  --color-surface-nav-bar: #93c0f7;
+  --color-other-char-bar: #b4b6b4;   /* cards, sidebar, headers */
+  --color-chat-bar:    #84cc6c;
+  --color-surface-2:   #3589f0;   /* borders, dividers */
+  --color-surface-3:   #f45916;   /* hover states */
+
+  /* Text */
+  --color-text-primary:   #060606;
+  --color-text-login :    #f6f2f2;  /* headings, main content #f1f5f9*/
+  --color-text-secondary: #1e1f1f;  /* body text #e2e8f0*/
+  --color-text-chat-bar:  #1e1f1f;
+  --color-text-muted:     #070707;  /* placeholders, labels */
+  --color-text-faint:     #576982;  /* timestamps, hints */
+
+  /* Accent — primary action color */
+  --color-accent:          #1d4ed8;  /* buttons, sent bubbles */
+  --color-accent-hover:    #2563eb;
+  --color-accent-light:    #4d95f3;  /* avatar backgrounds */
+  --color-accent-text:     #0418f5;  /* avatar initials, links */
+
+  /* Group accent */
+  --color-group:           #4c1fee; /* #2d1f5e */
+  --color-group-text:      #bca9f6;
+  --color-group-name:      #4c1fee;
+
+  /* Semantic */
+  --color-online:    #1da54f;   /* green dot #22c55e*/
+  --color-online-status: #373636;
+  --color-danger:    #f80707;   /* logout, errors #f87171*/
+  --color-danger-bg: rgba(241, 46, 46, 0.1);
+  --color-danger-border: rgba(246, 5, 5, 0.4);
+  --color-info:      #7a99be;   /* links, info text #60a5fa*/
+
+  /* Border radius */
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   10px;
+  --radius-xl:   14px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 12px;
+  --gap-lg: 16px;
+  --gap-xl: 20px;
+
+  /* Typography */
+  --font-base: 'DM Sans', 'Segoe UI', sans-serif;
+  --font-size-xs:  10px;
+  --font-size-sm:  11px;
+  --font-size-md:  13px;
+  --font-size-lg:  14px;
+  --font-size-xl:  15px;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-base);
+  color: var(--color-text-secondary);
+  font-family: var(--font-base);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   GLOBAL ELEMENT DEFAULTS
+   ============================================================ */
+input, textarea {
+  outline: none;
+  border: none;
+  font-family: var(--font-base);
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-base);
+  font-size: var(--font-size-md);
+}
+
+a {
+  color: var(--color-info);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* ============================================================
+   SCROLLBAR — consistent across sidebar and messages
+   ============================================================ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-2) transparent;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-surface-2); border-radius: var(--radius-full); }
+
+
+
+
+
+
+/* * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+body {
+  background: #0f172a;
+  color: white;
+}
+
+input {
+  outline: none;
+  border: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+} */

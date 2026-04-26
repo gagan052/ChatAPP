@@ -1,0 +1,88 @@
+.invite-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  cursor: pointer;
+  padding: 10px 10px 4px;
+  transition: color 0.15s;
+}
+
+.invite-back-btn:hover { color: var(--color-text-primary); }
+
+.invite-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  padding: 8px 10px 10px;
+}
+
+.invite-empty {
+  font-size: var(--font-size-md);
+  color: var(--color-text-faint);
+  padding: 8px 10px;
+}
+
+.invite-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  transition: background 0.15s;
+}
+
+.invite-card:hover { background: rgba(255,255,255,0.03); }
+
+.invite-avatar {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent-light);
+  color: var(--color-accent-text);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.invite-username {
+  flex: 1;
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+}
+
+.invite-actions { display: flex; gap: 6px; }
+
+.invite-accept-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #fff;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.invite-accept-btn:hover { background: var(--color-accent-hover); }
+
+.invite-reject-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--color-danger-border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.invite-reject-btn:hover { background: var(--color-danger-bg); }
