@@ -20,7 +20,9 @@ export const useUsers = (currentUsername: string) => {
     };
 
     onOnlineUsers(handler);
-    return () => offOnlineUsers(handler);
+    return () => {
+      offOnlineUsers(handler);
+    };
   }, [currentUsername]);
 
   return { users, onlineUsers };

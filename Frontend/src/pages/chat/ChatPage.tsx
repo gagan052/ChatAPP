@@ -78,7 +78,9 @@ export default function ChatPage() {
 
     onInvitationAccepted(handler);
 
-    return () => offInvitationAccepted(handler);
+    return () => {
+      offInvitationAccepted(handler);
+    };
   }, []);
 
   useEffect(() => {
@@ -88,7 +90,9 @@ export default function ChatPage() {
 
     onInvitationReceived(handler);
 
-    return () => offInvitationReceived(handler);
+    return () => {
+      offInvitationReceived(handler);
+    };
   }, []);
 
   if (!username) {
@@ -112,7 +116,9 @@ export default function ChatPage() {
 
     onInvitationAccepted(handler);
 
-    return () => offInvitationAccepted(handler);
+    return () => {
+      offInvitationAccepted(handler);
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -162,7 +168,9 @@ export default function ChatPage() {
     };
 
     socket.on("user_last_seen", handler);
-    return () => socket.off("user_last_seen", handler);
+    return () => {
+      socket.off("user_last_seen", handler);
+    };
   }, []);
 
   useEffect(() => {

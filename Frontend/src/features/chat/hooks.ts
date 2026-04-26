@@ -56,7 +56,9 @@ export const useChat = (myUserId: string, selectedUserId: string | null) => {
     };
 
     onMessage(handler);
-    return () => offMessage(handler);
+    return () => {
+      offMessage(handler);
+    };
   }, [myUserId]);
 
   return { messages, setMessages };

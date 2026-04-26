@@ -60,7 +60,9 @@ export const useGroupChat = (myUserId: string, selectedGroupId: string | null) =
 
     onGroupMessage(handler);
     
-    return () => offGroupMessage(handler);
+    return () => {
+      offGroupMessage(handler);
+    };
   }, [myUserId]);
 
   return { messages, setMessages };

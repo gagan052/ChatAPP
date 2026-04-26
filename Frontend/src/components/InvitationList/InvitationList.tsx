@@ -20,7 +20,9 @@ const InvitationList = ({ onBack }: Props) => {
       setInvitations((prev) => [inv, ...prev]);
     };
     onInvitationReceived(handleNewInvite);
-    return () => offInvitationReceived(handleNewInvite);
+    return () => {
+      offInvitationReceived(handleNewInvite);
+    };
   }, []);
 
   const fetchInvitations = async () => {
