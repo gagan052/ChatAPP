@@ -53,7 +53,7 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { logout } = useAuth();
-  const { users, onlineUsers } = useUsers(username);
+  const { onlineUsers } = useUsers(username);
   const { messages: privateMessages } = useChat(userId, selectedUserId);
   const { groups, reloadGroups } = useGroups(userId);
   const { messages: groupMessages } = useGroupChat(
@@ -179,7 +179,7 @@ export default function ChatPage() {
   }, [userId, selectedUserId]);
 
   useEffect(() => {
-    const handler = (msg: any) => {
+    const handler = () => {
       // Update last message in groups list
       reloadGroups(); // Simplest way to ensure everything is in sync including member counts etc.
     };
