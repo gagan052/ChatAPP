@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { onMessage, offMessage } from "./socket";
+import { BASE_URL } from "../../services/http";
 
-const BASE_URL = "http://localhost:3001";
+// const BASE_URL = "http://localhost:3001";
 
 const fetchMessages = async (myUserId: string, otherUserId: string) => {
   const token = localStorage.getItem("token");
