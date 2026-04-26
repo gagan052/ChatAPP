@@ -132,7 +132,6 @@
 }
 .search-user button{
     background-color: rgb(240, 168, 80);
-    background: var();
     padding: 5px;
     position: absolute;
     right: 20px;
