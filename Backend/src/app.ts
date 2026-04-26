@@ -13,7 +13,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  "https://chatapp-1-i5is.onrender.com", // Add production URL
+  "https://chatapp-1-i5is.onrender.com",
+  "https://zynk-gagan.onrender.com", // Add production URL
 ];
 
 app.use(cors({
