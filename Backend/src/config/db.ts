@@ -9,10 +9,13 @@ export const connectDB = async () => {
   }
 
   try {
+    console.log("Attempting to connect to MongoDB...");
     await mongoose.connect(mongoURI);
-    console.log("MongoDB Connected");
+    console.log("MongoDB Connected Successfully to:", mongoURI.split("@")[1] || "Local DB");
   } catch (err) {
+    console.error("MongoDB Connection Error Details:");
     console.error(err);
-    process.exit(1);
+    // Don't exit immediately in production to allow logs to be captured
+    setTimeout(() => process.exit(1), 5000);
   }
 };

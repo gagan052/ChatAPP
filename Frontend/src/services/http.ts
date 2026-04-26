@@ -1,4 +1,5 @@
-const BASE_URL = "http://localhost:3001";
+// export const BASE_URL = "http://localhost:3001";
+export const BASE_URL = "https://chatapp-1-i5is.onrender.com";
 
 export const api = async (url: string, options?: RequestInit) => {
   const token = localStorage.getItem("token");

@@ -1,6 +1,5 @@
 import { io } from "socket.io-client";
-
-const BASE_URL = "http://localhost:3001";
+import { BASE_URL } from "./http";
 
 export const socket = io(BASE_URL, {
   autoConnect: false,

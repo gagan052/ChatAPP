@@ -2,13 +2,14 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { disconnectSocket } from "../../services/socket";
 import { toast } from 'react-toastify';
+import { BASE_URL } from "../../services/http";
 
 export const useAuth = () => {
   const navigate = useNavigate();
 
   const login = async (identifier: string, password: string) => {
     try {
-      const res = await axios.post("http://localhost:3001/api/auth/login", {
+      const res = await axios.post(`${BASE_URL}/api/auth/login`, {
         identifier,
         password,
       });
@@ -30,7 +31,7 @@ export const useAuth = () => {
 
   const signup = async (email: string, username: string, password: string) => {
     try {
-      const res = await axios.post("http://localhost:3001/api/auth/signup", {
+      const res = await axios.post(`${BASE_URL}/api/auth/signup`, {
         email,
         username,
         password,
