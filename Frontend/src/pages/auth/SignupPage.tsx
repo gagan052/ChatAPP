@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../features/auth/hooks";
 import "./auth.css";
 
@@ -35,7 +36,7 @@ export default function SignupPage() {
         </button>
 
         <p>
-          Already have an account? <a href="/">Login</a>
+          Already have an account? <Link to="/">Login</Link>
         </p>
       </div>
     </div>
