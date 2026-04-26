@@ -18,6 +18,11 @@ const messageSchema = new mongoose.Schema(
       type: String,
     },
 
+    isEdited: {
+      type: Boolean,
+      default: false,
+    },
+
     status: [
       {
         userId: {

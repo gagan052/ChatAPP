@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { onMessage, offMessage } from "./socket";
+import { onMessage, offMessage, onMessageUpdated, offMessageUpdated, onMessageDeleted, offMessageDeleted, onChatCleared, offChatCleared } from "./socket";
 import { BASE_URL } from "../../services/http";
 
 // const BASE_URL = "http://localhost:3001";
@@ -56,8 +56,30 @@ export const useChat = (myUserId: string, selectedUserId: string | null) => {
     };
 
     onMessage(handler);
+
+    const updateHandler = (updatedMsg: any) => {
+      setMessages((prev) =>
+        prev.map((m) => (String(m._id) === String(updatedMsg._id) ? updatedMsg : m))
+      );
+    };
+
+    const deleteHandler = ({ messageId }: { messageId: string }) => {
+      setMessages((prev) => prev.filter((m) => String(m._id) !== String(messageId)));
+    };
+
+    const clearHandler = () => {
+      setMessages([]);
+    };
+
+    onMessageUpdated(updateHandler);
+    onMessageDeleted(deleteHandler);
+    onChatCleared(clearHandler);
+
     return () => {
       offMessage(handler);
+      offMessageUpdated(updateHandler);
+      offMessageDeleted(deleteHandler);
+      offChatCleared(clearHandler);
     };
   }, [myUserId]);
 

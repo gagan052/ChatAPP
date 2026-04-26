@@ -6,9 +6,10 @@ import { onInvitationReceived, offInvitationReceived } from "../../features/invi
 
 interface Props {
   onBack: () => void; // ← called when user clicks back
+  onAccept?: () => void; // ← called when user accepts an invite
 }
 
-const InvitationList = ({ onBack }: Props) => {
+const InvitationList = ({ onBack, onAccept }: Props) => {
   const [invitations, setInvitations] = useState<any[]>([]);
 
   useEffect(() => {
@@ -37,6 +38,7 @@ const InvitationList = ({ onBack }: Props) => {
   const acceptInvite = (id: string) => {
     socket.emit("accept_invitation", id);
     setInvitations((prev) => prev.filter((i) => i._id !== id));
+    if (onAccept) onAccept();
   };
 
   const rejectInvite = (id: string) => {

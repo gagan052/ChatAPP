@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { onGroupMessage, offGroupMessage } from "../chat/socket";
+import { onGroupMessage, offGroupMessage, onMessageUpdated, offMessageUpdated, onMessageDeleted, offMessageDeleted, onChatCleared, offChatCleared } from "../chat/socket";
 import { api } from "../../services/http";
 
 export const fetchGroups = async () => {
@@ -59,9 +59,33 @@ export const useGroupChat = (myUserId: string, selectedGroupId: string | null) =
     };
 
     onGroupMessage(handler);
+
+    const updateHandler = (updatedMsg: any) => {
+      if (updatedMsg.chatId !== selectedGroupRef.current) return;
+      setMessages((prev) =>
+        prev.map((m) => (String(m._id) === String(updatedMsg._id) ? updatedMsg : m))
+      );
+    };
+
+    const deleteHandler = ({ messageId, chatId }: { messageId: string; chatId: string }) => {
+      if (chatId !== selectedGroupRef.current) return;
+      setMessages((prev) => prev.filter((m) => String(m._id) !== String(messageId)));
+    };
+
+    const clearHandler = ({ chatId }: { chatId: string }) => {
+      if (chatId !== selectedGroupRef.current) return;
+      setMessages([]);
+    };
+
+    onMessageUpdated(updateHandler);
+    onMessageDeleted(deleteHandler);
+    onChatCleared(clearHandler);
     
     return () => {
       offGroupMessage(handler);
+      offMessageUpdated(updateHandler);
+      offMessageDeleted(deleteHandler);
+      offChatCleared(clearHandler);
     };
   }, [myUserId]);
 

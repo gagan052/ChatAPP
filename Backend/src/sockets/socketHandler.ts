@@ -47,6 +47,89 @@ export const handleSockets = (io: Server) => {
       }
     });
 
+    socket.on("edit_message", async ({ messageId, text, toUserId, isGroup }: { messageId: string; text: string; toUserId?: string; isGroup?: boolean }) => {
+      const userId = socketToUser[socket.id];
+      if (!userId || !messageId || !text?.trim()) return;
+
+      try {
+        const message = await Message.findById(messageId);
+        if (!message || message.sender.toString() !== userId) return;
+
+        message.text = text.trim();
+        message.isEdited = true;
+        await message.save();
+
+        const populated = await message.populate("sender", "username _id");
+
+        if (isGroup && message.chatId) {
+          const conversation = await Conversation.findById(message.chatId);
+          conversation?.participants.forEach((pId: any) => {
+            const pid = pId.toString();
+            onlineUsers[pid]?.forEach((sid) => io.to(sid).emit("message:updated", populated));
+          });
+        } else if (toUserId) {
+          onlineUsers[toUserId]?.forEach((sid) => io.to(sid).emit("message:updated", populated));
+          onlineUsers[userId]?.forEach((sid) => io.to(sid).emit("message:updated", populated));
+        }
+      } catch (err) {
+        console.error("edit_message error:", err);
+      }
+    });
+
+    socket.on("delete_message", async ({ messageId, toUserId, isGroup }: { messageId: string; toUserId?: string; isGroup?: boolean }) => {
+      const userId = socketToUser[socket.id];
+      if (!userId || !messageId) return;
+
+      try {
+        const message = await Message.findById(messageId);
+        if (!message || message.sender.toString() !== userId) return;
+
+        const chatId = message.chatId;
+        await Message.findByIdAndDelete(messageId);
+
+        if (isGroup && chatId) {
+          const conversation = await Conversation.findById(chatId);
+          conversation?.participants.forEach((pId: any) => {
+            const pid = pId.toString();
+            onlineUsers[pid]?.forEach((sid) => io.to(sid).emit("message:deleted", { messageId, chatId }));
+          });
+        } else if (toUserId) {
+          onlineUsers[toUserId]?.forEach((sid) => io.to(sid).emit("message:deleted", { messageId, chatId }));
+          onlineUsers[userId]?.forEach((sid) => io.to(sid).emit("message:deleted", { messageId, chatId }));
+        }
+      } catch (err) {
+        console.error("delete_message error:", err);
+      }
+    });
+
+    socket.on("clear_chat", async ({ chatId, toUserId, isGroup }: { chatId: string; toUserId?: string; isGroup?: boolean }) => {
+      const userId = socketToUser[socket.id];
+      if (!userId || !chatId) return;
+
+      try {
+        const conversation = await Conversation.findById(chatId);
+        if (!conversation) return;
+        
+        const isParticipant = conversation.participants.some(p => p.toString() === userId);
+        if (!isParticipant) return;
+
+        await Message.deleteMany({ chatId });
+        await Conversation.findByIdAndUpdate(chatId, { lastMessage: null });
+
+        if (isGroup) {
+          conversation.participants.forEach((pId: any) => {
+            const pid = pId.toString();
+            onlineUsers[pid]?.forEach((sid) => io.to(sid).emit("chat:cleared", { chatId }));
+          });
+        } else if (toUserId) {
+          onlineUsers[toUserId]?.forEach((sid) => io.to(sid).emit("chat:cleared", { chatId }));
+          onlineUsers[userId]?.forEach((sid) => io.to(sid).emit("chat:cleared", { chatId }));
+        }
+      } catch (err) {
+        console.error("clear_chat error:", err);
+      }
+    });
+
     // ── Group message ──
     socket.on("group_message", async ({ groupId, text }: { groupId: string; text: string }) => {
       const fromUserId = socketToUser[socket.id];
@@ -100,10 +183,20 @@ export const handleSockets = (io: Server) => {
         type: "private",
         participants: [invitation.sender, invitation.receiver],
       });
+
+      // Populate participants so clients get the username/lastSeen immediately
+      const populatedConv = await Conversation.findById(conversation._id)
+        .populate("participants", "username _id lastSeen");
+
       const senderSockets = onlineUsers[invitation.sender.toString()];
       const receiverSockets = onlineUsers[invitation.receiver.toString()];
-      senderSockets?.forEach((id) => io.to(id).emit("invitation:accepted", { conversation }));
-      receiverSockets?.forEach((id) => io.to(id).emit("invitation:accepted", { conversation }));
+
+      senderSockets?.forEach((id) =>
+        io.to(id).emit("invitation:accepted", { conversation: populatedConv })
+      );
+      receiverSockets?.forEach((id) =>
+        io.to(id).emit("invitation:accepted", { conversation: populatedConv })
+      );
     });
 
     socket.on("reject_invitation", async (invitationId: any) => {

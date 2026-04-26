@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { connectSocket } from "../../services/socket";
 import { useChat } from "../../features/chat/hooks";
 import { useGroupChat, useGroups } from "../../features/groups/hooks";
@@ -40,6 +40,7 @@ export default function ChatPage() {
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<"chats" | "invitations">("chats");
   const [inviteCount, setInviteCount] = useState(0);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [chatUsers, setChatUsers] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
 
@@ -62,6 +63,39 @@ export default function ChatPage() {
 
   const messages = chatType === "private" ? privateMessages : groupMessages;
 
+  const loadChats = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const data = await api("/api/conversations");
+
+      const mapped = data.map((conv: any) => {
+        const other = conv.participants.find((p: any) => p._id !== userId);
+
+        if (!other) return null;
+
+        return {
+          id: other._id,
+          username: other.username,
+          lastSeen: other.lastSeen,
+          lastMessage: conv.lastMessage?.text || "",
+          chatId: conv._id,
+        };
+      }).filter(Boolean);
+
+      const unique = Array.from(
+        new Map(mapped.map((u: any) => [u.id, u])).values()
+      );
+
+      setChatUsers(unique);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    loadChats();
+  }, [loadChats]);
+
   useEffect(() => {
     if (userId && username) connectSocket(userId, username);
   }, [userId, username]);
@@ -72,8 +106,35 @@ export default function ChatPage() {
 
   useEffect(() => {
     const handler = ({ conversation }: any) => {
-      // open chat automatically
-      setSelectedUserId(conversation.participants[0]);
+      const otherUser = conversation.participants.find(
+        (p: any) => p._id !== userId
+      );
+
+      if (otherUser) {
+        // Optimistically update chat list
+        setChatUsers((prev) => {
+          const exists = prev.find((u) => u.id === otherUser._id);
+          if (exists) return prev;
+          return [
+            {
+              id: otherUser._id,
+              username: otherUser.username,
+              lastSeen: otherUser.lastSeen,
+            },
+            ...prev,
+          ];
+        });
+
+        // open chat automatically
+        setSelectedUserId(otherUser._id);
+      }
+
+      // switch to chats tab
+      setActiveTab("chats");
+      // reset invite count
+      setInviteCount(0);
+      // reload chat list to ensure consistency
+      loadChats();
     };
 
     onInvitationAccepted(handler);
@@ -81,11 +142,58 @@ export default function ChatPage() {
     return () => {
       offInvitationAccepted(handler);
     };
-  }, []);
+  }, [userId, loadChats]);
 
   useEffect(() => {
-    const handler = () => {
+    if (!selectedUserId) return;
+    setUnreadCounts((prev) => ({ ...prev, [selectedUserId]: 0 }));
+  }, [selectedUserId]);
+
+  useEffect(() => {
+    const handler = (msg: any) => {
+      const msgSenderId = String(msg.sender?._id ?? msg.sender);
+      
+      // Update unread counts
+      if (msgSenderId !== userId && msgSenderId !== selectedUserId) {
+        setUnreadCounts((prev) => ({
+          ...prev,
+          [msgSenderId]: (prev[msgSenderId] || 0) + 1,
+        }));
+      }
+
+      // Update last message in chatUsers list
+      setChatUsers((prev) => 
+        prev.map((u) => {
+          if (u.id === msgSenderId || (msgSenderId === userId && u.id === selectedUserId)) {
+            return { ...u, lastMessage: msg.text };
+          }
+          return u;
+        })
+      );
+    };
+
+    socket.on("receive_private_message", handler);
+    return () => {
+      socket.off("receive_private_message", handler);
+    };
+  }, [userId, selectedUserId]);
+
+  useEffect(() => {
+    const handler = (msg: any) => {
+      // Update last message in groups list
+      reloadGroups(); // Simplest way to ensure everything is in sync including member counts etc.
+    };
+
+    socket.on("receive_group_message", handler);
+    return () => {
+      socket.off("receive_group_message", handler);
+    };
+  }, [reloadGroups]);
+
+  useEffect(() => {
+    const handler = (inv: any) => {
       setInviteCount((prev) => prev + 1);
+      toast.info(`New invitation from ${inv.sender?.username || "someone"}`);
     };
 
     onInvitationReceived(handler);
@@ -99,59 +207,6 @@ export default function ChatPage() {
     window.location.href = "/";
     return null;
   }
-
-  useEffect(() => {
-    const handler = ({ conversation }: any) => {
-      const otherUserId = conversation.participants.find(
-        (id: string) => id !== userId
-      );
-
-      // switch to chats tab
-      setActiveTab("chats");
-      // open chat automatically
-      setSelectedUserId(otherUserId);
-      // reset invite count
-      setInviteCount(0);
-    };
-
-    onInvitationAccepted(handler);
-
-    return () => {
-      offInvitationAccepted(handler);
-    };
-  }, [userId]);
-
-  useEffect(() => {
-    const loadChats = async () => {
-      try {
-        const data = await api("/api/conversations");
-
-        const mapped = data.map((conv: any) => {
-          const other = conv.participants.find((p: any) => p._id !== userId);
-
-          return {
-            id: other._id,
-            username: other.username,
-            lastSeen: other.lastSeen,
-          };
-        });
-
-        const unique = Array.from(
-          new Map(mapped.map((u: any) => [u.id, u])).values()
-        );
-
-        setChatUsers(unique);
-
-        console.log(unique);
-
-        console.log(chatUsers);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    if (userId) loadChats();
-  }, [userId]);
 
   useEffect(() => {
     // When any user goes offline, server broadcasts their fresh lastSeen
@@ -251,6 +306,13 @@ export default function ChatPage() {
 
   const selectedUserObj = chatUsers.find((u) => u.id === selectedUserId);
 
+  const goHome = useCallback(() => {
+    setActiveTab("chats");
+    setSearch("");
+    setSearchResults([]);
+    loadChats();
+  }, [loadChats]);
+
   const handleInvite = (userId: string) => {
     const user = searchResults.find((u) => u.id === userId);
 
@@ -272,6 +334,9 @@ export default function ChatPage() {
 
     // send socket
     sendInvitation(userId);
+
+    // Navigate to home after sending invite
+    goHome();
   };
 
   // const headerName =
@@ -373,7 +438,7 @@ export default function ChatPage() {
 
         <div className="user-list">
           {activeTab === "invitations" ? (
-            <InvitationList onBack={() => {}} />
+            <InvitationList onBack={() => setActiveTab("chats")} onAccept={goHome} />
           ) : (
             <>
               {chatUsers.map((u) => {
@@ -387,9 +452,27 @@ export default function ChatPage() {
                     onClick={() => selectPrivateChat(u.username, u.id)}
                   >
                     <div className="user-avatar">{getInitials(u.username)}</div>
-                    <div>
-                      <div className="user-name">{u.username}</div>
-                      <p className="last-message">hello</p>
+                    <div style={{ flex: 1 }}>
+                      <div className="user-name-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div className="user-name">{u.username}</div>
+                        {unreadCounts[u.id] > 0 && (
+                          <div className="unread-badge" style={{ 
+                            backgroundColor: "var(--color-accent)", 
+                            color: "white", 
+                            borderRadius: "50%", 
+                            width: "20px", 
+                            height: "20px", 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "center",
+                            fontSize: "10px",
+                            fontWeight: "bold"
+                          }}>
+                            {unreadCounts[u.id]}
+                          </div>
+                        )}
+                      </div>
+                      <p className="last-message">{u.lastMessage || "No messages yet"}</p>
                     </div>
                   </div>
                 );
@@ -416,8 +499,15 @@ export default function ChatPage() {
 
                         <div className="user-meta">
                           <div className="user-name">{g.groupInfo?.name}</div>
-                          <div className="user-preview">
-                            {g.participants?.length || 0} members
+                          <div className="user-preview" style={{ 
+                            fontSize: "12px", 
+                            color: "var(--color-text-faint)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: "150px"
+                          }}>
+                            {g.lastMessage?.text || `${g.participants?.length || 0} members`}
                           </div>
                         </div>
                       </div>
@@ -437,6 +527,7 @@ export default function ChatPage() {
         selectedUser={selectedUser}
         selectedUserId={selectedUserId}
         selectedGroup={selectedGroup}
+        chatId={chatType === "private" ? selectedUserObj?.chatId : selectedGroup?._id}
         messages={messages}
         text={text}
         onTextChange={setText}
@@ -448,7 +539,7 @@ export default function ChatPage() {
 
       {showModal && (
         <CreateGroupModal
-          users={users.filter((u: any) => typeof u !== "string")}
+          users={chatUsers}
           onClose={() => setShowModal(false)}
           onCreated={handleGroupCreated}
         />

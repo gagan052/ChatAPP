@@ -1,5 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { formatLastSeen } from "../../pages/chat/formatLastSeen";
+import ChatInfoModal from "../ChatInfoModal/ChatInfoModal";
+import { editMessage, deleteMessageSocket, clearChatSocket } from "../../features/chat/socket";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -9,6 +11,7 @@ interface Message {
   _id?: string;
   text: string;
   createdAt?: string;
+  isEdited?: boolean;
   sender: {
     _id?: string;
     id?: string;
@@ -33,6 +36,7 @@ interface ChatAreaProps {
   selectedUser: string | null;
   selectedUserId: string | null;
   selectedGroup: Group | null;
+  chatId: string | null;
   messages: Message[];
   text: string;
   onTextChange: (val: string) => void;
@@ -45,8 +49,9 @@ interface ChatAreaProps {
 export default function ChatArea({
   chatType,
   selectedUser,
-  // selectedUserId,
+  selectedUserId,
   selectedGroup,
+  chatId,
   messages,
   text,
   onTextChange,
@@ -56,6 +61,46 @@ export default function ChatArea({
   selectedUserObj,
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  const handleEdit = (m: Message) => {
+    if (!m._id) return;
+    setEditingId(m._id);
+    setEditText(m.text);
+  };
+
+  const submitEdit = () => {
+    if (!editingId || !editText.trim()) return;
+    editMessage(
+      editingId,
+      editText.trim(),
+      chatType === "private" ? selectedUserId || undefined : undefined,
+      chatType === "group"
+    );
+    setEditingId(null);
+    setEditText("");
+  };
+
+  const handleDelete = (messageId: string) => {
+    if (!window.confirm("Delete this message?")) return;
+    deleteMessageSocket(
+      messageId,
+      chatType === "private" ? selectedUserId || undefined : undefined,
+      chatType === "group"
+    );
+  };
+
+  const handleClear = () => {
+    if (!chatId) return;
+    if (!window.confirm("Are you sure you want to clear all messages? This cannot be undone.")) return;
+    clearChatSocket(
+      chatId,
+      chatType === "private" ? selectedUserId || undefined : undefined,
+      chatType === "group"
+    );
+  };
 
   const headerName =
     chatType === "private" ? selectedUser : selectedGroup?.groupInfo?.name;
@@ -72,30 +117,68 @@ export default function ChatArea({
       {headerName ? (
         <>
           {/* Header */}
-          <div className="chat-header">
-            <div
-              className={`chat-header-avatar ${
-                chatType === "group" ? "group-avatar" : ""
-              }`}
+          <div
+            className="chat-header"
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+          >
+            <div 
+              onClick={() => setShowInfoModal(true)} 
+              style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "12px", flex: 1 }}
             >
-              {headerInitials}
-            </div>
-            <div>
-              <div className="chat-header-name">{headerName}</div>
-              {chatType === "private" ? (
-                isOnline ? (
-                  <div className="chat-header-status">online</div>
+              <div
+                className={`chat-header-avatar ${
+                  chatType === "group" ? "group-avatar" : ""
+                }`}
+              >
+                {headerInitials}
+              </div>
+              <div>
+                <div className="chat-header-name">{headerName}</div>
+                {chatType === "private" ? (
+                  isOnline ? (
+                    <div className="chat-header-status">online</div>
+                  ) : (
+                    <div className="chat-header-offline">
+                      {formatLastSeen(selectedUserObj?.lastSeen)}
+                    </div>
+                  )
                 ) : (
                   <div className="chat-header-offline">
-                    {formatLastSeen(selectedUserObj?.lastSeen)}
+                    {selectedGroup?.participants?.length} members
                   </div>
-                )
-              ) : (
-                <div className="chat-header-offline">
-                  {selectedGroup?.participants?.length} members
-                </div>
-              )}
+                )}
+              </div>
             </div>
+
+            <button 
+              className="clear-chat-btn"
+              onClick={handleClear}
+              title="Clear all messages"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "8px",
+                color: "var(--color-text-faint)",
+                transition: "color 0.2s"
+              }}
+            >
+              <svg 
+                viewBox="0 0 24 24" 
+                width="20" 
+                height="20" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+            </button>
           </div>
 
           {/* Messages */}
@@ -124,7 +207,40 @@ export default function ChatArea({
                     {!isOwn && chatType === "group" && senderName && (
                       <div className="msg-sender-name">{senderName}</div>
                     )}
-                    <div className={`msg ${isOwn ? "own" : ""}`}>{m.text}</div>
+                    {editingId === m._id ? (
+                      <div className="msg-edit-input">
+                        <input
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") submitEdit();
+                            if (e.key === "Escape") setEditingId(null);
+                          }}
+                          autoFocus
+                        />
+                        <div className="msg-edit-actions">
+                          <button onClick={submitEdit}>Save</button>
+                          <button onClick={() => setEditingId(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className={`msg ${isOwn ? "own" : ""}`}>
+                          {m.text}
+                          {m.isEdited && <span className="msg-edited-tag">(edited)</span>}
+                        </div>
+                        {isOwn && m._id && (
+                          <div className="msg-actions">
+                            <button onClick={() => handleEdit(m)} title="Edit">
+                              ✎
+                            </button>
+                            <button onClick={() => handleDelete(m._id!)} title="Delete">
+                              🗑
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
                     <div className="msg-time">
                       {new Date(m.createdAt || Date.now()).toLocaleTimeString(
                         [],
@@ -173,6 +289,16 @@ export default function ChatArea({
           </div>
           <p>Select a chat or create a group</p>
         </div>
+      )}
+
+      {showInfoModal && (
+        <ChatInfoModal
+          chatType={chatType}
+          selectedUser={selectedUser}
+          selectedUserObj={selectedUserObj}
+          selectedGroup={selectedGroup}
+          onClose={() => setShowInfoModal(false)}
+        />
       )}
     </div>
   );
