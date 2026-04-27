@@ -354,7 +354,7 @@
 }
 
 .msg {
-  padding: 8px 12px;
+  padding: 0px 12px;
   border-radius: var(--radius-xl);
   font-size: var(--font-size-md);
   line-height: 1.5;
@@ -363,35 +363,37 @@
 }
 
 .msg-wrap.own .msg {
-  background: var(--color-accent);
-  color: #fff;
+  /* background: var(--color-accent); */
+  /* color: #fff; */
 }
 
 .msg-wrap.other .msg {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-surface-2);
+  /* background: var(--color-surface); */
+  /* color: var(--color-text-primary); */
+  /* border: 1px solid var(--color-surface-2); */
 }
 
 .msg-actions {
+  /* background-color: aqua; */
   display: flex;
   gap: 8px;
   margin-top: 4px;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.2s;
 }
 
 .msg-wrap:hover .msg-actions {
-  opacity: 1;
+  opacity: 2;
 }
 
 .msg-actions button {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 0px;
   font-size: 14px;
-  color: var(--color-text-faint);
+  /* color: var(--color-text-faint); */
+  /* background-color: tomato; */
   transition: color 0.2s;
 }
 
@@ -404,6 +406,7 @@
   font-style: italic;
   margin-left: 6px;
   opacity: 0.7;
+  /* background-color: tomato; */
 }
 
 .msg-edit-input {
@@ -412,6 +415,7 @@
   gap: 8px;
   padding: 8px;
   min-width: 200px;
+  /* background-color: aqua; */
 }
 
 .msg-edit-input input {
@@ -427,6 +431,7 @@
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  /* background-color: tomato; */
 }
 
 .msg-edit-actions button {
@@ -435,6 +440,7 @@
   border: none;
   cursor: pointer;
   font-size: 12px;
+  /* background-color: aqua; */
 }
 
 .msg-edit-actions button:first-child {
