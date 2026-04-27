@@ -90,7 +90,7 @@ export default function ChatPage() {
     } catch (err) {
       console.error(err);
     }
-  }, [userId]);
+  }, [userId,]);
 
   useEffect(() => {
     loadChats();
@@ -222,6 +222,61 @@ export default function ChatPage() {
       socket.off("user_last_seen", handler);
     };
   }, []);
+
+  // 1. message:updated — optimistically update sidebar text
+useEffect(() => {
+  const handler = (updatedMessage: any) => {
+    const chatId = String(updatedMessage.chatId?._id ?? updatedMessage.chatId);
+    setChatUsers((prev) =>
+      prev.map((u) =>
+        u.chatId === chatId
+          ? { ...u, lastMessage: updatedMessage.text }
+          : u
+      )
+    );
+  };
+ 
+  socket.on("message:updated", handler);
+  return () => {
+    socket.off("message:updated", handler)
+  };
+}, []);
+ 
+// 2. message:deleted — use newLastMessage from payload for instant update
+useEffect(() => {
+  const handler = ({ chatId, newLastMessage }: { messageId: string; chatId: string; newLastMessage: string }) => {
+    setChatUsers((prev) =>
+      prev.map((u) =>
+        u.chatId === String(chatId)
+          ? { ...u, lastMessage: newLastMessage }
+          : u
+      )
+    );
+  };
+ 
+  socket.on("message:deleted", handler);
+  return () => {
+    socket.off("message:deleted", handler)
+
+  };
+}, []);
+ 
+// 3. chat:cleared — blank out lastMessage immediately
+useEffect(() => {
+  const handler = ({ chatId }: { chatId: string }) => {
+    setChatUsers((prev) =>
+      prev.map((u) =>
+        u.chatId === String(chatId) ? { ...u, lastMessage: "" } : u
+      )
+    );
+  };
+ 
+  socket.on("chat:cleared", handler);
+  return () => {
+    socket.off("chat:cleared", handler)
+  };
+}, []);
+
 
   useEffect(() => {
     window.addEventListener("mousemove", resize);

@@ -53,7 +53,7 @@ export default function CreateGroupModal({ users, onClose, onCreated }: Props) {
       if (isAlreadySelected) {
         return prev.filter((x) => x !== user.id);
       } else {
-        // If adding a user from search results that isn't in our displayed list, add them
+        
         if (!allDisplayedUsers.find(u => u.id === user.id)) {
           setAllDisplayedUsers(prevUsers => [...prevUsers, user]);
         }

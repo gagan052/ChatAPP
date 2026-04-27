@@ -15,7 +15,6 @@ export const connectDB = async () => {
   } catch (err) {
     console.error("MongoDB Connection Error Details:");
     console.error(err);
-    // Don't exit immediately in production to allow logs to be captured
     setTimeout(() => process.exit(1), 5000);
   }
 };

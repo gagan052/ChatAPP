@@ -49,7 +49,7 @@ export const useChat = (myUserId: string, selectedUserId: string | null) => {
       if (!isRelevant) return;
 
       setMessages((prev) => {
-        // Strict dedup by _id
+      
         if (prev.some((m) => String(m._id) === String(msg._id))) return prev;
         return [...prev, msg];
       });

@@ -9,148 +9,327 @@ const socketToUser: Record<string, string> = {};
 const userNames: Record<string, string> = {};
 
 const getOnlineUsernames = () =>
-  Object.keys(onlineUsers).map((id) => userNames[id]).filter(Boolean);
+  Object.keys(onlineUsers)
+    .map((id) => userNames[id])
+    .filter(Boolean);
 
 export const handleSockets = (io: Server) => {
   io.on("connection", (socket: Socket) => {
-
-    socket.on("join", ({ userId, username }: { userId: string; username: string }) => {
-      if (!userId || !username) return;
-      socket.data.userId = userId;
-      socketToUser[socket.id] = userId;
-      userNames[userId] = username;
-      if (!onlineUsers[userId]) onlineUsers[userId] = [];
-      if (!onlineUsers[userId].includes(socket.id)) onlineUsers[userId].push(socket.id);
-      io.emit("online_users", getOnlineUsernames());
-    });
+    socket.on(
+      "join",
+      ({ userId, username }: { userId: string; username: string }) => {
+        if (!userId || !username) return;
+        socket.data.userId = userId;
+        socketToUser[socket.id] = userId;
+        userNames[userId] = username;
+        if (!onlineUsers[userId]) onlineUsers[userId] = [];
+        if (!onlineUsers[userId].includes(socket.id))
+          onlineUsers[userId].push(socket.id);
+        io.emit("online_users", getOnlineUsernames());
+      }
+    );
 
     // ── Private message ──
-    socket.on("private_message", async ({ toUserId, text }: { toUserId: string; text: string }) => {
-      const fromUserId = socketToUser[socket.id];
-      if (!fromUserId || !toUserId || !text?.trim()) return;
-      try {
-        let conversation = await Conversation.findOne({
-          type: "private",
-          participants: { $all: [fromUserId, toUserId], $size: 2 },
-        });
-        if (!conversation) {
-          conversation = await Conversation.create({ type: "private", participants: [fromUserId, toUserId] });
-        }
-        const msg = await Message.create({ chatId: conversation._id, sender: fromUserId, text: text.trim(), status: [] });
-        const populated = await msg.populate("sender", "username _id");
-        await Conversation.findByIdAndUpdate(conversation._id, { lastMessage: msg._id });
-        if (onlineUsers[toUserId]) onlineUsers[toUserId].forEach((id) => io.to(id).emit("receive_private_message", populated));
-        if (onlineUsers[fromUserId]) onlineUsers[fromUserId].forEach((id) => io.to(id).emit("receive_private_message", populated));
-      } catch (err) {
-        console.error("private_message error:", err);
-        socket.emit("error", { message: "Failed to send message" });
-      }
-    });
-
-    socket.on("edit_message", async ({ messageId, text, toUserId, isGroup }: { messageId: string; text: string; toUserId?: string; isGroup?: boolean }) => {
-      const userId = socketToUser[socket.id];
-      if (!userId || !messageId || !text?.trim()) return;
-
-      try {
-        const message = await Message.findById(messageId);
-        if (!message || message.sender.toString() !== userId) return;
-
-        message.text = text.trim();
-        message.isEdited = true;
-        await message.save();
-
-        const populated = await message.populate("sender", "username _id");
-
-        if (isGroup && message.chatId) {
-          const conversation = await Conversation.findById(message.chatId);
-          conversation?.participants.forEach((pId: any) => {
-            const pid = pId.toString();
-            onlineUsers[pid]?.forEach((sid) => io.to(sid).emit("message:updated", populated));
+    socket.on(
+      "private_message",
+      async ({ toUserId, text }: { toUserId: string; text: string }) => {
+        const fromUserId = socketToUser[socket.id];
+        if (!fromUserId || !toUserId || !text?.trim()) return;
+        try {
+          let conversation = await Conversation.findOne({
+            type: "private",
+            participants: { $all: [fromUserId, toUserId], $size: 2 },
           });
-        } else if (toUserId) {
-          onlineUsers[toUserId]?.forEach((sid) => io.to(sid).emit("message:updated", populated));
-          onlineUsers[userId]?.forEach((sid) => io.to(sid).emit("message:updated", populated));
+          if (!conversation) {
+            conversation = await Conversation.create({
+              type: "private",
+              participants: [fromUserId, toUserId],
+            });
+          }
+
+          console.log("SENDING MESSAGE:", {
+            fromUserId,
+            toUserId,
+          });
+
+          const msg = await Message.create({
+            chatId: conversation._id,
+            sender: fromUserId,
+            text: text.trim(),
+            status: [
+              {
+                userId: fromUserId,
+                delivered: new Date(),
+              },
+              {
+                userId: toUserId,
+                delivered: onlineUsers[toUserId] ? new Date() : null,
+              },
+            ],
+          });
+
+          // if (onlineUsers[toUserId]) {
+          //   await Message.findByIdAndUpdate(msg._id, {
+          //     $push: {
+          //       status: {
+          //         userId: toUserId,
+          //         delivered: new Date(),
+          //       },
+          //     },
+          //   });
+          // }
+
+          const updatedMsg = await Message.findById(msg._id).populate(
+            "sender",
+            "username _id"
+          );
+
+          await Conversation.findByIdAndUpdate(conversation._id, {
+            lastMessage: msg._id,
+          });
+          if (onlineUsers[toUserId])
+            onlineUsers[toUserId].forEach((id) =>
+              io.to(id).emit("receive_private_message", updatedMsg)
+            );
+          if (onlineUsers[fromUserId])
+            onlineUsers[fromUserId].forEach((id) =>
+              io.to(id).emit("receive_private_message", updatedMsg)
+            );
+        } catch (err) {
+          console.error("private_message error:", err);
+          socket.emit("error", { message: "Failed to send message" });
         }
-      } catch (err) {
-        console.error("edit_message error:", err);
+      }
+    );
+
+    socket.on("mark_seen", async ({ chatId, userId }) => {
+      const messages = await Message.find({
+        chatId,
+        sender: { $ne: userId },
+      });
+
+      for (const msg of messages) {
+        const alreadySeen = msg.status.find(
+          (s: any) => String(s.userId) === String(userId) && s.seen
+        );
+
+        if (!alreadySeen) {
+          await Message.updateOne(
+            { _id: msg._id },
+            {
+              $set: {
+                "status.$[elem].seen": new Date(),
+              },
+            },
+            {
+              arrayFilters: [{ "elem.userId": userId }],
+            }
+          );
+
+          io.to(chatId).emit("message_seen", {
+            messageId: msg._id,
+            userId,
+          });
+        }
       }
     });
 
-    socket.on("delete_message", async ({ messageId, toUserId, isGroup }: { messageId: string; toUserId?: string; isGroup?: boolean }) => {
-      const userId = socketToUser[socket.id];
-      if (!userId || !messageId) return;
+    socket.on(
+      "edit_message",
+      async ({
+        messageId,
+        text,
+        toUserId,
+        isGroup,
+      }: {
+        messageId: string;
+        text: string;
+        toUserId?: string;
+        isGroup?: boolean;
+      }) => {
+        const userId = socketToUser[socket.id];
+        if (!userId || !messageId || !text?.trim()) return;
 
-      try {
-        const message = await Message.findById(messageId);
-        if (!message || message.sender.toString() !== userId) return;
+        try {
+          const message = await Message.findById(messageId);
+          if (!message || message.sender.toString() !== userId) return;
 
-        const chatId = message.chatId;
-        await Message.findByIdAndDelete(messageId);
+          message.text = text.trim();
+          message.isEdited = true;
+          await message.save();
 
-        if (isGroup && chatId) {
+          const populated = await message.populate("sender", "username _id");
+
+          if (isGroup && message.chatId) {
+            const conversation = await Conversation.findById(message.chatId);
+            conversation?.participants.forEach((pId: any) => {
+              const pid = pId.toString();
+              onlineUsers[pid]?.forEach((sid) =>
+                io.to(sid).emit("message:updated", populated)
+              );
+            });
+          } else if (toUserId) {
+            onlineUsers[toUserId]?.forEach((sid) =>
+              io.to(sid).emit("message:updated", populated)
+            );
+            onlineUsers[userId]?.forEach((sid) =>
+              io.to(sid).emit("message:updated", populated)
+            );
+          }
+        } catch (err) {
+          console.error("edit_message error:", err);
+        }
+      }
+    );
+
+    socket.on(
+      "delete_message",
+      async ({
+        messageId,
+        toUserId,
+        isGroup,
+      }: {
+        messageId: string;
+        toUserId?: string;
+        isGroup?: boolean;
+      }) => {
+        const userId = socketToUser[socket.id];
+        if (!userId || !messageId) return;
+
+        try {
+          const message = await Message.findById(messageId);
+          if (!message || message.sender.toString() !== userId) return;
+
+          const chatId = message.chatId;
+          await Message.findByIdAndDelete(messageId);
+
+          //  Update lastMessage to the new latest after deletion
+          const latestMsg = await Message.findOne({ chatId }).sort({
+            createdAt: -1,
+          });
+          await Conversation.findByIdAndUpdate(chatId, {
+            lastMessage: latestMsg?._id ?? null,
+          });
+
+          const payload = {
+            messageId,
+            chatId,
+            newLastMessage: latestMsg?.text ?? "", //  frontend can use this directly
+          };
+
+          if (isGroup && chatId) {
+            const conversation = await Conversation.findById(chatId);
+            conversation?.participants.forEach((pId: any) => {
+              const pid = pId.toString();
+              onlineUsers[pid]?.forEach((sid) =>
+                io.to(sid).emit("message:deleted", payload)
+              );
+            });
+          } else if (toUserId) {
+            onlineUsers[toUserId]?.forEach((sid) =>
+              io.to(sid).emit("message:deleted", payload)
+            );
+            onlineUsers[userId]?.forEach((sid) =>
+              io.to(sid).emit("message:deleted", payload)
+            );
+          }
+        } catch (err) {
+          console.error("delete_message error:", err);
+        }
+      }
+    );
+
+    socket.on(
+      "clear_chat",
+      async ({
+        chatId,
+        toUserId,
+        isGroup,
+      }: {
+        chatId: string;
+        toUserId?: string;
+        isGroup?: boolean;
+      }) => {
+        const userId = socketToUser[socket.id];
+        if (!userId || !chatId) return;
+
+        try {
           const conversation = await Conversation.findById(chatId);
-          conversation?.participants.forEach((pId: any) => {
-            const pid = pId.toString();
-            onlineUsers[pid]?.forEach((sid) => io.to(sid).emit("message:deleted", { messageId, chatId }));
-          });
-        } else if (toUserId) {
-          onlineUsers[toUserId]?.forEach((sid) => io.to(sid).emit("message:deleted", { messageId, chatId }));
-          onlineUsers[userId]?.forEach((sid) => io.to(sid).emit("message:deleted", { messageId, chatId }));
+          if (!conversation) return;
+
+          const isParticipant = conversation.participants.some(
+            (p) => p.toString() === userId
+          );
+          if (!isParticipant) return;
+
+          await Message.deleteMany({ chatId });
+          await Conversation.findByIdAndUpdate(chatId, { lastMessage: null });
+
+          if (isGroup) {
+            conversation.participants.forEach((pId: any) => {
+              const pid = pId.toString();
+              onlineUsers[pid]?.forEach((sid) =>
+                io.to(sid).emit("chat:cleared", { chatId })
+              );
+            });
+          } else if (toUserId) {
+            onlineUsers[toUserId]?.forEach((sid) =>
+              io.to(sid).emit("chat:cleared", { chatId })
+            );
+            onlineUsers[userId]?.forEach((sid) =>
+              io.to(sid).emit("chat:cleared", { chatId })
+            );
+          }
+        } catch (err) {
+          console.error("clear_chat error:", err);
         }
-      } catch (err) {
-        console.error("delete_message error:", err);
       }
-    });
-
-    socket.on("clear_chat", async ({ chatId, toUserId, isGroup }: { chatId: string; toUserId?: string; isGroup?: boolean }) => {
-      const userId = socketToUser[socket.id];
-      if (!userId || !chatId) return;
-
-      try {
-        const conversation = await Conversation.findById(chatId);
-        if (!conversation) return;
-        
-        const isParticipant = conversation.participants.some(p => p.toString() === userId);
-        if (!isParticipant) return;
-
-        await Message.deleteMany({ chatId });
-        await Conversation.findByIdAndUpdate(chatId, { lastMessage: null });
-
-        if (isGroup) {
-          conversation.participants.forEach((pId: any) => {
-            const pid = pId.toString();
-            onlineUsers[pid]?.forEach((sid) => io.to(sid).emit("chat:cleared", { chatId }));
-          });
-        } else if (toUserId) {
-          onlineUsers[toUserId]?.forEach((sid) => io.to(sid).emit("chat:cleared", { chatId }));
-          onlineUsers[userId]?.forEach((sid) => io.to(sid).emit("chat:cleared", { chatId }));
-        }
-      } catch (err) {
-        console.error("clear_chat error:", err);
-      }
-    });
+    );
 
     // ── Group message ──
-    socket.on("group_message", async ({ groupId, text }: { groupId: string; text: string }) => {
-      const fromUserId = socketToUser[socket.id];
-      if (!fromUserId || !groupId || !text?.trim()) return;
-      try {
-        const conversation = await Conversation.findOne({ _id: groupId, type: "group", participants: fromUserId });
-        if (!conversation) { socket.emit("error", { message: "Group not found or access denied" }); return; }
-        const msg = await Message.create({ chatId: groupId, sender: fromUserId, text: text.trim(), status: [] });
-        const populated = await msg.populate("sender", "username _id");
-        await Conversation.findByIdAndUpdate(groupId, { lastMessage: msg._id });
-        conversation.participants.forEach((participantId: any) => {
-          const pid = participantId.toString();
-          if (onlineUsers[pid]) onlineUsers[pid].forEach((socketId) => {
-            io.to(socketId).emit("receive_group_message", { ...populated.toObject(), groupId });
+    socket.on(
+      "group_message",
+      async ({ groupId, text }: { groupId: string; text: string }) => {
+        const fromUserId = socketToUser[socket.id];
+        if (!fromUserId || !groupId || !text?.trim()) return;
+        try {
+          const conversation = await Conversation.findOne({
+            _id: groupId,
+            type: "group",
+            participants: fromUserId,
           });
-        });
-      } catch (err) {
-        console.error("group_message error:", err);
-        socket.emit("error", { message: "Failed to send group message" });
+          if (!conversation) {
+            socket.emit("error", {
+              message: "Group not found or access denied",
+            });
+            return;
+          }
+          const msg = await Message.create({
+            chatId: groupId,
+            sender: fromUserId,
+            text: text.trim(),
+            status: [],
+          });
+          const populated = await msg.populate("sender", "username _id");
+          await Conversation.findByIdAndUpdate(groupId, {
+            lastMessage: msg._id,
+          });
+          conversation.participants.forEach((participantId: any) => {
+            const pid = participantId.toString();
+            if (onlineUsers[pid])
+              onlineUsers[pid].forEach((socketId) => {
+                io.to(socketId).emit("receive_group_message", {
+                  ...populated.toObject(),
+                  groupId,
+                });
+              });
+          });
+        } catch (err) {
+          console.error("group_message error:", err);
+          socket.emit("error", { message: "Failed to send group message" });
+        }
       }
-    });
+    );
 
     // ── Invitations ──
     socket.on("send_invitation", async ({ toUserId }) => {
@@ -159,15 +338,35 @@ export const handleSockets = (io: Server) => {
       const receiverId = typeof toUserId === "object" ? toUserId.id : toUserId;
       try {
         const existingRecent = await Invitation.findOne({
-          sender: senderId, receiver: receiverId,
+          sender: senderId,
+          receiver: receiverId,
           createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
         });
-        if (existingRecent) { socket.emit("invitation:error", { message: "You can send only one invite in 24 hours" }); return; }
-        const pending = await Invitation.findOne({ sender: senderId, receiver: receiverId, status: "pending" });
-        if (pending) { socket.emit("invitation:error", { message: "Invite already pending" }); return; }
-        const invitation = await Invitation.create({ sender: senderId, receiver: receiverId });
+        if (existingRecent) {
+          socket.emit("invitation:error", {
+            message: "You can send only one invite in 24 hours",
+          });
+          return;
+        }
+        const pending = await Invitation.findOne({
+          sender: senderId,
+          receiver: receiverId,
+          status: "pending",
+        });
+        if (pending) {
+          socket.emit("invitation:error", {
+            message: "Invite already pending",
+          });
+          return;
+        }
+        const invitation = await Invitation.create({
+          sender: senderId,
+          receiver: receiverId,
+        });
         if (onlineUsers[receiverId]) {
-          onlineUsers[receiverId].forEach((id) => io.to(id).emit("invitation:received", invitation));
+          onlineUsers[receiverId].forEach((id) =>
+            io.to(id).emit("invitation:received", invitation)
+          );
         }
       } catch (err) {
         console.error("Invite error:", err);
@@ -185,8 +384,9 @@ export const handleSockets = (io: Server) => {
       });
 
       // Populate participants so clients get the username/lastSeen immediately
-      const populatedConv = await Conversation.findById(conversation._id)
-        .populate("participants", "username _id lastSeen");
+      const populatedConv = await Conversation.findById(
+        conversation._id
+      ).populate("participants", "username _id lastSeen");
 
       const senderSockets = onlineUsers[invitation.sender.toString()];
       const receiverSockets = onlineUsers[invitation.receiver.toString()];
@@ -205,7 +405,9 @@ export const handleSockets = (io: Server) => {
       invitation.status = "rejected";
       invitation.rejectedAt = new Date();
       await invitation.save();
-      io.to(invitation.sender.toString()).emit("invitation:rejected", { invitationId });
+      io.to(invitation.sender.toString()).emit("invitation:rejected", {
+        invitationId,
+      });
     });
 
     // ── Logout — write lastSeen BEFORE socket closes ──
@@ -228,7 +430,9 @@ export const handleSockets = (io: Server) => {
       const userId = socketToUser[socket.id];
       if (userId) {
         if (onlineUsers[userId]) {
-          onlineUsers[userId] = onlineUsers[userId].filter((id) => id !== socket.id);
+          onlineUsers[userId] = onlineUsers[userId].filter(
+            (id) => id !== socket.id
+          );
           if (onlineUsers[userId].length === 0) {
             delete onlineUsers[userId];
             delete userNames[userId];
@@ -236,7 +440,10 @@ export const handleSockets = (io: Server) => {
             try {
               const now = new Date();
               await User.findByIdAndUpdate(userId, { lastSeen: now });
-              io.emit("user_last_seen", { userId, lastSeen: now.toISOString() });
+              io.emit("user_last_seen", {
+                userId,
+                lastSeen: now.toISOString(),
+              });
             } catch (err) {
               console.error("disconnect lastSeen error:", err);
             }
@@ -246,6 +453,5 @@ export const handleSockets = (io: Server) => {
       }
       io.emit("online_users", getOnlineUsernames());
     });
-
   });
 };

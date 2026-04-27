@@ -5,7 +5,7 @@ import Message from "../models/message";
 export const createGroup = async (req:any, res:any) => {
   try {
     const { name, memberIds } = req.body;
-    const adminId = req.user.id; // from authMiddleware
+    const adminId = req.user.id; 
 
     if (!name?.trim()) {
       return res.status(400).json({ success: false, message: "Group name is required" });
@@ -15,7 +15,7 @@ export const createGroup = async (req:any, res:any) => {
       return res.status(400).json({ success: false, message: "Add at least one member" });
     }
 
-    // Admin is always a participant
+  
     const participants = [...new Set([adminId, ...memberIds])];
 
     const group = await Conversation.create({
@@ -36,7 +36,7 @@ export const createGroup = async (req:any, res:any) => {
   }
 };
 
-// GET /api/groups — get all groups the current user belongs to
+// GET /api/groups 
 export const getGroups = async (req:any, res:any) => {
   try {
     const userId = req.user.id;

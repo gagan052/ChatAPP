@@ -5,8 +5,8 @@ import "./InvitationList.css";
 import { onInvitationReceived, offInvitationReceived } from "../../features/invitation/socket";
 
 interface Props {
-  onBack: () => void; // ← called when user clicks back
-  onAccept?: () => void; // ← called when user accepts an invite
+  onBack: () => void; 
+  onAccept?: () => void; 
 }
 
 const InvitationList = ({ onBack, onAccept }: Props) => {

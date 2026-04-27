@@ -7,7 +7,6 @@ export const sendInvitation = async (req: any, res: any) => {
     const senderId = req.user._id;
     const { receiverId } = req.body;
 
-    // check if already contacts (conversation exists)
     const existingConversation = await Conversation.findOne({
       type: "private",
       participants: { $all: [senderId, receiverId] },
@@ -16,7 +15,6 @@ export const sendInvitation = async (req: any, res: any) => {
       return res.status(400).json({ message: "Already contacts" });
     }
 
-    // check 24hr cooldown after rejection
     const rejected: any = await Invitation.findOne({
       sender: senderId,
       receiver: receiverId,
@@ -37,7 +35,6 @@ export const sendInvitation = async (req: any, res: any) => {
       }
     }
 
-    // check if invite already pending
     const existing = await Invitation.findOne({
       $or: [
         { sender: senderId, receiver: receiverId },
@@ -50,7 +47,6 @@ export const sendInvitation = async (req: any, res: any) => {
       return res.status(400).json({ message: "Invitation already sent" });
     }
 
-    // create invitation
     const invitation = await Invitation.create({
       sender: senderId,
       receiver: receiverId,
@@ -139,7 +135,6 @@ export const getInvitationStatus = async (req: any, res: any) => {
     const senderId = req.user._id;
     const { receiverId } = req.params;
 
-    // check if already contacts
     const conversation = await Conversation.findOne({
       type: "private",
       participants: { $all: [senderId, receiverId] },
@@ -148,7 +143,6 @@ export const getInvitationStatus = async (req: any, res: any) => {
       return res.json({ status: "contacts" });
     }
 
-    // check invitation
     const invitation = await Invitation.findOne({
       sender: senderId,
       receiver: receiverId,

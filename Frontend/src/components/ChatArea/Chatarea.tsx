@@ -1,7 +1,14 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { formatLastSeen } from "../../pages/chat/formatLastSeen";
 import ChatInfoModal from "../ChatInfoModal/ChatInfoModal";
-import { editMessage, deleteMessageSocket, clearChatSocket } from "../../features/chat/socket";
+import {
+  editMessage,
+  deleteMessageSocket,
+  clearChatSocket,
+} from "../../features/chat/socket";
+import { toast } from "react-toastify";
+import "./ChatArea.css";
+import { socket } from "../../services/socket";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -12,11 +19,19 @@ interface Message {
   text: string;
   createdAt?: string;
   isEdited?: boolean;
-  sender: {
-    _id?: string;
-    id?: string;
-    username?: string;
-  } | string;
+  sender:
+    | {
+        _id?: string;
+        id?: string;
+        username?: string;
+      }
+    | string;
+
+  status?: {
+    userId: string;
+    delivered?: string;
+    seen?: string;
+  }[];
 }
 
 interface ChatUser {
@@ -65,6 +80,15 @@ export default function ChatArea({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
+  useEffect(() => {
+    if (!chatId) return;
+
+    socket.emit("mark_seen", {
+      chatId,
+      userId,
+    });
+  }, [chatId]);
+
   const handleEdit = (m: Message) => {
     if (!m._id) return;
     setEditingId(m._id);
@@ -94,7 +118,61 @@ export default function ChatArea({
 
   const handleClear = () => {
     if (!chatId) return;
-    if (!window.confirm("Are you sure you want to clear all messages? This cannot be undone.")) return;
+    // if (!window.confirm("Are you sure you want to clear all messages? This cannot be undone.")) return;
+
+    if (!toast.isActive("clear-chat-confirm")) {
+      toast.info(
+        <div>
+          Are you sure you want to clear all messages? This cannot be undone.
+          <div
+            style={{
+              marginTop: "10px",
+              display: "flex",
+              gap: "10px",
+              justifyContent: "flex-end",
+            }}
+          >
+            <button
+              onClick={() => {
+                toast.dismiss("clear-chat-confirm");
+                clearChatSocket(
+                  chatId,
+                  chatType === "private"
+                    ? selectedUserId || undefined
+                    : undefined,
+                  chatType === "group"
+                );
+              }}
+              style={{
+                padding: "6px 12px",
+                backgroundColor: "rgb(24, 60, 233)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Yes, Clear
+            </button>
+            <button
+              onClick={() => toast.dismiss("clear-chat-confirm")}
+              style={{
+                padding: "6px 12px",
+                backgroundColor: "transparent",
+                color: "var(--color-text-faint)",
+                border: "1px solid var(--color-text-faint)",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>,
+        { toastId: "clear-chat-confirm", autoClose: false }
+      );
+    }
+
     clearChatSocket(
       chatId,
       chatType === "private" ? selectedUserId || undefined : undefined,
@@ -119,11 +197,21 @@ export default function ChatArea({
           {/* Header */}
           <div
             className="chat-header"
-            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
           >
-            <div 
-              onClick={() => setShowInfoModal(true)} 
-              style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: "12px", flex: 1 }}
+            <div
+              onClick={() => setShowInfoModal(true)}
+              style={{
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                flex: 1,
+              }}
             >
               <div
                 className={`chat-header-avatar ${
@@ -150,7 +238,7 @@ export default function ChatArea({
               </div>
             </div>
 
-            <button 
+            <button
               className="clear-chat-btn"
               onClick={handleClear}
               title="Clear all messages"
@@ -160,11 +248,14 @@ export default function ChatArea({
                 cursor: "pointer",
                 padding: "8px",
                 color: "var(--color-text-faint)",
-                transition: "color 0.2s"
+                transition: "color 0.2s",
               }}
             >
-             Clear Chat <i className="fa-solid fa-trash" style={{ color: "rgb(24, 60, 233)" ,fontSize: "20px"}}></i>
-
+              Clear Chat{" "}
+              <i
+                className="fa-solid fa-trash"
+                style={{ color: "rgb(24, 60, 233)", fontSize: "20px" }}
+              ></i>
             </button>
           </div>
 
@@ -173,9 +264,7 @@ export default function ChatArea({
             {messages.map((m, i) => {
               const senderObj = m.sender;
               const msgSenderId = String(
-                (senderObj as any)?._id ??
-                  (senderObj as any)?.id ??
-                  senderObj
+                (senderObj as any)?._id ?? (senderObj as any)?.id ?? senderObj
               );
               const isOwn = msgSenderId === userId;
               const senderName = (senderObj as any)?.username ?? "";
@@ -207,31 +296,70 @@ export default function ChatArea({
                         />
                         <div className="msg-edit-actions">
                           <button onClick={submitEdit}>Save</button>
-                          <button onClick={() => setEditingId(null)}>Cancel</button>
+                          <button onClick={() => setEditingId(null)}>
+                            Cancel
+                          </button>
                         </div>
                       </div>
                     ) : (
                       <>
                         <div className={`msg ${isOwn ? "own" : ""}`}>
                           {m.text}
-                          {m.isEdited && <span className="msg-edited-tag">(edited)</span>}
+                          {m.isEdited && (
+                            <span className="msg-edited-tag">(edited)</span>
+                          )}
                         </div>
                         {isOwn && m._id && (
                           <div className="msg-actions">
                             <button onClick={() => handleEdit(m)} title="Edit">
-                              <i className="fa-solid fa-pen-to-square" style={{ color: "rgb(24, 60, 233)" ,fontSize: "13px"}}></i>
+                              <i
+                                className="fa-solid fa-pen-to-square"
+                                style={{
+                                  color: "rgb(24, 60, 233)",
+                                  fontSize: "13px",
+                                }}
+                              ></i>
                             </button>
-                            <button onClick={() => handleDelete(m._id!)} title="Delete">
-                              <i className="fa-solid fa-trash" style={{ color: "rgb(24, 60, 233)" ,fontSize: "13px"}}></i>
+                            <button
+                              onClick={() => handleDelete(m._id!)}
+                              title="Delete"
+                            >
+                              <i
+                                className="fa-solid fa-trash"
+                                style={{
+                                  color: "rgb(24, 60, 233)",
+                                  fontSize: "13px",
+                                }}
+                              ></i>
                             </button>
                           </div>
                         )}
                       </>
                     )}
                     <div className="msg-time">
-                      {new Date(m.createdAt || Date.now()).toLocaleTimeString(
-                        [],
-                        { hour: "2-digit", minute: "2-digit" }
+                      <span>
+                        {new Date(m.createdAt || Date.now()).toLocaleTimeString(
+                          [],
+                          { hour: "2-digit", minute: "2-digit" }
+                        )}
+                      </span>
+
+                      {isOwn && (
+                        <span className="msg-status">
+                          {(() => {
+                            const status = m.status?.find(
+                              (s: any) =>
+                                String(s.userId) === String(selectedUserId)
+                            );
+
+                            if (!status) return "✓"; // sent
+
+                            if (status.seen) return "✓✓"; // seen
+                            if (status.delivered) return "✓✓"; // delivered
+
+                            return "✓";
+                          })()}
+                        </span>
                       )}
                     </div>
                   </div>

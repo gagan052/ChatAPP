@@ -14,12 +14,12 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://chatapp-1-i5is.onrender.com",
-  "https://zynk-gagan.onrender.com", // Add production URL
+  "https://zynk-gagan.onrender.com", 
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith(".onrender.com")) {
@@ -39,8 +39,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", protect, messageRoutes);
 app.use("/api/invitations", protect, invitationRoutes);
-app.use("/api/groups", groupRoutes);
+app.use("/api/groups", protect,groupRoutes);
 app.use("/api/users", protect, userRoutes);
-app.use("/api/conversations",conversationRoute);
+app.use("/api/conversations",protect, conversationRoute);
 
 export default app;

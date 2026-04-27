@@ -5,7 +5,7 @@ import { fetchUsers } from "./api";
 export const useUsers = (currentUsername: string) => {
     
   const [users, setUsers] = useState<{ id: string; username: string }[]>([]);
-  const [onlineUsers, setOnlineUsers] = useState<string[]>([]); // starts empty — no stale state
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]); 
 
   useEffect(() => {
     fetchUsers()
@@ -14,7 +14,6 @@ export const useUsers = (currentUsername: string) => {
       })
       .catch(console.error);
 
-    // Always replace the full list — never merge — so removed users disappear instantly
     const handler = (onlineList: string[]) => {
       setOnlineUsers(onlineList.filter((u) => u !== currentUsername));
     };
@@ -27,3 +26,4 @@ export const useUsers = (currentUsername: string) => {
 
   return { users, onlineUsers };
 };
+

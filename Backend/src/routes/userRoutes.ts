@@ -31,7 +31,7 @@ router.get("/search", async (req: any, res: any) => {
     const results = [];
 
     for (const user of users) {
-      // skip self
+      
       if (String(user._id) === String(currentUserId)) continue;
 
       const privateConversation = await Conversation.findOne({
