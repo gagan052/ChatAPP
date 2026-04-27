@@ -124,6 +124,10 @@
 .user .last-message{
     /* background-color: #00a884; */
     font-size: x-small;
+    width: 100px;
+    height: 18px;
+    overflow: hidden;
+
 }
 
 .search-user{

@@ -111,7 +111,6 @@ export default function ChatPage() {
       );
 
       if (otherUser) {
-        // Optimistically update chat list
         setChatUsers((prev) => {
           const exists = prev.find((u) => u.id === otherUser._id);
           if (exists) return prev;
@@ -125,15 +124,12 @@ export default function ChatPage() {
           ];
         });
 
-        // open chat automatically
         setSelectedUserId(otherUser._id);
       }
 
-      // switch to chats tab
       setActiveTab("chats");
-      // reset invite count
       setInviteCount(0);
-      // reload chat list to ensure consistency
+      
       loadChats();
     };
 
@@ -153,7 +149,6 @@ export default function ChatPage() {
     const handler = (msg: any) => {
       const msgSenderId = String(msg.sender?._id ?? msg.sender);
       
-      // Update unread counts
       if (msgSenderId !== userId && msgSenderId !== selectedUserId) {
         setUnreadCounts((prev) => ({
           ...prev,
@@ -161,7 +156,7 @@ export default function ChatPage() {
         }));
       }
 
-      // Update last message in chatUsers list
+      
       setChatUsers((prev) => 
         prev.map((u) => {
           if (u.id === msgSenderId || (msgSenderId === userId && u.id === selectedUserId)) {
@@ -180,8 +175,8 @@ export default function ChatPage() {
 
   useEffect(() => {
     const handler = () => {
-      // Update last message in groups list
-      reloadGroups(); // Simplest way to ensure everything is in sync including member counts etc.
+      
+      reloadGroups(); 
     };
 
     socket.on("receive_group_message", handler);
@@ -209,7 +204,7 @@ export default function ChatPage() {
   }
 
   useEffect(() => {
-    // When any user goes offline, server broadcasts their fresh lastSeen
+  
     const handler = ({
       userId,
       lastSeen,
@@ -251,7 +246,7 @@ export default function ChatPage() {
 
     const newWidth = e.clientX;
 
-    // limit min/max
+
     if (newWidth < 200 || newWidth > 500) return;
 
     setSidebarWidth(newWidth);
@@ -318,7 +313,7 @@ export default function ChatPage() {
 
     if (!user) return;
 
-    //  cooldown case
+
     if (user.inviteStatus === "cooldown") {
       toast.error("You can send invite after 24 hours");
       return;
@@ -327,7 +322,6 @@ export default function ChatPage() {
     //  already pending
     if (user.inviteStatus === "pending") return;
 
-    //  optimistic update
     setSearchResults((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, inviteStatus: "pending" } : u))
     );
@@ -335,23 +329,9 @@ export default function ChatPage() {
     // send socket
     sendInvitation(userId);
 
-    // Navigate to home after sending invite
     goHome();
   };
 
-  // const headerName =
-  //   chatType === "private" ? selectedUser : selectedGroup?.groupInfo?.name;
-
-  // const headerInitials = headerName ? getInitials(headerName) : "";
-
-  // const isOnline =
-  //   chatType === "private" &&
-  //   selectedUser &&
-  //   onlineUsers.includes(selectedUser);
-
-  // function homepage(){
-  //     Navigate("/chat");
-  // }
 
   return (
     <div className="chat-container">
@@ -376,21 +356,7 @@ export default function ChatPage() {
               onClick={() => setShowModal(true)}
               title="New group"
             >
-              <svg
-                viewBox="0 0 24 24"
-                width="14"
-                height="14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <line x1="19" y1="8" x2="19" y2="14" />
-                <line x1="22" y1="11" x2="16" y2="11" />
-              </svg>
+              <i className="fa-solid fa-people-group" style={{ color: "rgb(24, 60, 233)" }}></i>
             </button>
 
             <button className="logout-btn" onClick={logout}>

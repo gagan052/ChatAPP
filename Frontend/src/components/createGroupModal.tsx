@@ -23,8 +23,7 @@ export default function CreateGroupModal({ users, onClose, onCreated }: Props) {
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Combine initial users with any selected users that might not be in the initial list
-  // (e.g. users added via search)
+
   const [allDisplayedUsers, setAllDisplayedUsers] = useState<User[]>(users);
 
   useEffect(() => {
