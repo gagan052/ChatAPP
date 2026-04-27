@@ -117,68 +117,47 @@ export default function ChatArea({
   };
 
   const handleClear = () => {
-    if (!chatId) return;
-    // if (!window.confirm("Are you sure you want to clear all messages? This cannot be undone.")) return;
+  if (!chatId) return;
 
-    if (!toast.isActive("clear-chat-confirm")) {
-      toast.info(
-        <div>
-          Are you sure you want to clear all messages? This cannot be undone.
-          <div
-            style={{
-              marginTop: "10px",
-              display: "flex",
-              gap: "10px",
-              justifyContent: "flex-end",
+  if (!toast.isActive("clear-chat-confirm")) {
+    toast.info(
+      <div>
+        Are you sure you want to clear all messages? This cannot be undone.
+        <div
+          style={{
+            marginTop: "10px",
+            display: "flex",
+            gap: "10px",
+            justifyContent: "flex-end",
+          }}
+        >
+          <button
+            onClick={() => {
+              toast.dismiss("clear-chat-confirm");
+
+              clearChatSocket(
+                chatId,
+                chatType === "private"
+                  ? selectedUserId || undefined
+                  : undefined,
+                chatType === "group"
+              );
             }}
           >
-            <button
-              onClick={() => {
-                toast.dismiss("clear-chat-confirm");
-                clearChatSocket(
-                  chatId,
-                  chatType === "private"
-                    ? selectedUserId || undefined
-                    : undefined,
-                  chatType === "group"
-                );
-              }}
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "rgb(24, 60, 233)",
-                color: "#fff",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Yes, Clear
-            </button>
-            <button
-              onClick={() => toast.dismiss("clear-chat-confirm")}
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "transparent",
-                color: "var(--color-text-faint)",
-                border: "1px solid var(--color-text-faint)",
-                borderRadius: "4px",
-                cursor: "pointer",
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>,
-        { toastId: "clear-chat-confirm", autoClose: false }
-      );
-    }
+            Yes, Clear
+          </button>
 
-    clearChatSocket(
-      chatId,
-      chatType === "private" ? selectedUserId || undefined : undefined,
-      chatType === "group"
+          <button
+            onClick={() => toast.dismiss("clear-chat-confirm")}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      { toastId: "clear-chat-confirm", autoClose: false }
     );
-  };
+  }
+};
 
   const headerName =
     chatType === "private" ? selectedUser : selectedGroup?.groupInfo?.name;
