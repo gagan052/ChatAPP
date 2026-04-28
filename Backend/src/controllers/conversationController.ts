@@ -9,7 +9,7 @@ export const getUserConversations = async (req:any, res:any) => {
       type: "private",
       participants: userId,
     })
-      .populate("participants", "username _id lastSeen")
+      .populate("participants", "username _id lastSeen profilePic")
       .populate("lastMessage", "text createdAt sender")
       .sort({ updatedAt: -1 });
  

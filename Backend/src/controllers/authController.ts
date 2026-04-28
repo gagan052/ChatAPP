@@ -33,6 +33,7 @@ export const signup = async (req:any, res:any) => {
       user: {
         id: user._id,
         username: user.username,
+        profilePic: user.profilePic,
       },
     });
 
@@ -69,6 +70,7 @@ export const login = async (req:any, res:any) => {
       user: {
         id: user._id,
         username: user.username,
+        profilePic: user.profilePic,
       },
     });
   } catch (err) {

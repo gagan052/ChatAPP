@@ -64,8 +64,14 @@ const InvitationList = ({ onBack, onAccept }: Props) => {
 
       {invitations.map((inv: any) => (
         <div key={inv._id} className="invite-card">
-          <div className="invite-avatar">
-            {inv.sender?.username?.slice(0, 2).toUpperCase()}
+          <div className="invite-avatar" style={{
+             background: inv.sender?.profilePic ? `url(${inv.sender.profilePic}) center/cover` : "var(--color-accent-light)",
+             display: "flex",
+             alignItems: "center",
+             justifyContent: "center",
+             overflow: "hidden"
+           }}>
+            {!inv.sender?.profilePic && inv.sender?.username?.slice(0, 2).toUpperCase()}
           </div>
           <span className="invite-username">{inv.sender?.username}</span>
           <div className="invite-actions">

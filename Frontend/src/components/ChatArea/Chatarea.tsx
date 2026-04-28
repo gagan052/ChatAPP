@@ -24,6 +24,7 @@ interface Message {
         _id?: string;
         id?: string;
         username?: string;
+        profilePic?: string;
       }
     | string;
 
@@ -38,6 +39,7 @@ interface ChatUser {
   id: string;
   username: string;
   lastSeen?: string;
+  profilePic?: string;
 }
 
 interface Group {
@@ -196,8 +198,17 @@ export default function ChatArea({
                 className={`chat-header-avatar ${
                   chatType === "group" ? "group-avatar" : ""
                 }`}
+                style={{
+                  background: (chatType === "private" && selectedUserObj?.profilePic) 
+                    ? `url(${selectedUserObj.profilePic}) center/cover` 
+                    : "var(--color-accent-light)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  overflow: "hidden"
+                }}
               >
-                {headerInitials}
+                {!(chatType === "private" && selectedUserObj?.profilePic) && headerInitials}
               </div>
               <div>
                 <div className="chat-header-name">{headerName}</div>
@@ -247,6 +258,7 @@ export default function ChatArea({
               );
               const isOwn = msgSenderId === userId;
               const senderName = (senderObj as any)?.username ?? "";
+              const senderPic = (senderObj as any)?.profilePic ?? (msgSenderId === selectedUserId ? selectedUserObj?.profilePic : null);
 
               return (
                 <div
@@ -254,8 +266,14 @@ export default function ChatArea({
                   className={`msg-row ${isOwn ? "own" : ""}`}
                 >
                   {!isOwn && (
-                    <div className="msg-bubble-avatar">
-                      {getInitials(senderName || selectedUser || "?")}
+                    <div className="msg-bubble-avatar" style={{
+                      background: senderPic ? `url(${senderPic}) center/cover` : "var(--color-accent-light)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      overflow: "hidden"
+                    }}>
+                      {!senderPic && getInitials(senderName || selectedUser || "?")}
                     </div>
                   )}
                   <div className={`msg-wrap ${isOwn ? "own" : "other"}`}>

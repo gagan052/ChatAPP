@@ -7,6 +7,7 @@ interface User {
   lastSeen?: string;
   email?: string;
   phone?: string;
+  profilePic?: string;
 }
 
 interface Group {
@@ -56,9 +57,16 @@ export default function ChatInfoModal({
               height: "80px",
               fontSize: "32px",
               margin: "0 auto 16px",
+              background: (chatType === "private" && selectedUserObj?.profilePic) 
+                ? `url(${selectedUserObj.profilePic}) center/cover` 
+                : "var(--color-accent-light)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden"
             }}
           >
-            {initials}
+            {!(chatType === "private" && selectedUserObj?.profilePic) && initials}
           </div>
           <h2 style={{ marginBottom: "8px" }}>{name}</h2>
 
@@ -87,8 +95,20 @@ export default function ChatInfoModal({
                   <div
                     key={member._id || member.id}
                     className="member-item"
-                    style={{ padding: "8px 0", borderBottom: "1px solid var(--color-surface-2)" }}
+                    style={{ padding: "8px 0", borderBottom: "1px solid var(--color-surface-2)", display: "flex", alignItems: "center", gap: "10px" }}
                   >
+                    <div className="member-avatar" style={{
+                      width: "30px",
+                      height: "30px",
+                      borderRadius: "50%",
+                      background: member.profilePic ? `url(${member.profilePic}) center/cover` : "var(--color-accent-light)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "12px"
+                    }}>
+                      {!member.profilePic && member.username[0].toUpperCase()}
+                    </div>
                     <span className="member-name">{member.username}</span>
                   </div>
                 ))}

@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import LoginPage from "../pages/auth/LoginPage";
 import SignupPage from "../pages/auth/SignupPage";
 import ChatPage from "../pages/chat/ChatPage";
+import SettingsPage from "../pages/settings/SettingsPage";
 
 const ProtectedRoute = ({ children }: any) => {
   const token = localStorage.getItem("token");
@@ -16,6 +17,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ChatPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/settings",
+    element: (
+      <ProtectedRoute>
+        <SettingsPage />
       </ProtectedRoute>
     ),
   },

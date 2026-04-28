@@ -53,14 +53,17 @@ export const useAuth = () => {
   };
 
   const logout = () => {
-    disconnectSocket(); // ← tells server to fire "disconnect", removes from onlineUsers
+    disconnectSocket();
     localStorage.clear();
     navigate("/");
     toast.success("logged Out Successfully");
-    // toast.error("logged Out Successfully");
-    // toast.warn("logged Out Successfully");
-
   };
 
-  return { login, signup, logout };
+  const updateProfilePic = (newProfilePic: string) => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    user.profilePic = newProfilePic;
+    localStorage.setItem("user", JSON.stringify(user));
+  };
+
+  return { login, signup, logout, updateProfilePic };
 };

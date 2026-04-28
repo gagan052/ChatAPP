@@ -27,7 +27,7 @@ export const createGroup = async (req:any, res:any) => {
       },
     });
 
-    const populated = await group.populate("participants", "username _id");
+    const populated = await group.populate("participants", "username _id profilePic");
 
     res.json({ success: true, group: populated });
   } catch (err) {
@@ -45,7 +45,7 @@ export const getGroups = async (req:any, res:any) => {
       type: "group",
       participants: userId,
     })
-      .populate("participants", "username _id")
+      .populate("participants", "username _id profilePic")
       .populate("lastMessage", "text sender createdAt")
       .sort({ updatedAt: -1 });
 
@@ -63,7 +63,7 @@ export const getGroupMessages = async (req:any, res:any) => {
     const { groupId } = req.params;
 
     const messages = await Message.find({ chatId: groupId })
-      .populate("sender", "username _id")
+      .populate("sender", "username _id profilePic")
       .sort({ createdAt: 1 });
 
     res.json(messages);

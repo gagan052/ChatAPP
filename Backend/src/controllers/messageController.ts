@@ -15,9 +15,11 @@ export const getMessages = async (req:any, res:any) => {
       return res.json([]); 
     }
 
-    const messages = await Message.find({ chatId: conversation._id }).sort({
-      createdAt: 1,
-    });
+    const messages = await Message.find({ chatId: conversation._id })
+      .populate("sender", "username _id profilePic")
+      .sort({
+        createdAt: 1,
+      });
 
     res.json(messages);
   } catch (err) {

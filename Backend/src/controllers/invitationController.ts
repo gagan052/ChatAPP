@@ -52,7 +52,7 @@ export const sendInvitation = async (req: any, res: any) => {
       receiver: receiverId,
     });
 
-    const populated = await invitation.populate("sender", "username email");
+    const populated = await invitation.populate("sender", "username email profilePic");
 
     res.json({ invitation: populated });
   } catch (err: any) {
@@ -85,7 +85,7 @@ export const acceptInvitation = async (req: any, res: any) => {
 
     const populated = await conversation.populate(
       "participants",
-      "username email"
+      "username email profilePic"
     );
 
     res.json({ conversation: populated });
@@ -121,7 +121,7 @@ export const getPendingInvitations = async (req: any, res: any) => {
     const invitations = await Invitation.find({
       receiver: req.user.id,
       status: "pending",
-    }).populate("sender", "username email");
+    }).populate("sender", "username email profilePic");
 
     res.json({ invitations });
   } catch (err: any) {

@@ -2,13 +2,15 @@ import express from "express";
 import User from "../models/user";
 import Conversation from "../models/conversation";
 import Invitation from "../models/invitation";
+import { upload } from "../middlewares/upload";
+import { protect } from "../middlewares/authMiddleware";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const users = await User.find().select("_id username");
-    res.json(users.map((u) => ({ id: u._id, username: u.username })));
+    const users = await User.find().select("_id username profilePic");
+    res.json(users.map((u) => ({ id: u._id, username: u.username, profilePic: u.profilePic })));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
@@ -26,7 +28,7 @@ router.get("/search", async (req: any, res: any) => {
 
     const users = await User.find({
       username: { $regex: q, $options: "i" },
-    }).select("_id username");
+    }).select("_id username profilePic");
 
     const results = [];
 
@@ -65,6 +67,7 @@ router.get("/search", async (req: any, res: any) => {
       results.push({
         id: user._id,
         username: user.username,
+        profilePic: user.profilePic,
         inviteStatus,
       });
     }
@@ -75,5 +78,19 @@ router.get("/search", async (req: any, res: any) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+router.post(
+  "/upload-profile",
+  protect,
+  upload.single("image"),
+  async (req: any, res) => {
+    const user : any = await User.findById(req.user.id);
+
+    user.profilePic = req.file.path; // cloudinary URL
+    await user.save();
+
+    res.json({ profilePic: user.profilePic });
+  }
+);
 
 export default router;

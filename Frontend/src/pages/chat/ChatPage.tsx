@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { connectSocket } from "../../services/socket";
 import { useChat } from "../../features/chat/hooks";
 import { useGroupChat, useGroups } from "../../features/groups/hooks";
@@ -29,6 +30,7 @@ function getInitials(name: string) {
 type ChatType = "private" | "group";
 
 export default function ChatPage() {
+  const navigate = useNavigate();
   const username = localStorage.getItem("username") || "";
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const userId = currentUser?.id;
@@ -77,6 +79,7 @@ export default function ChatPage() {
           id: other._id,
           username: other.username,
           lastSeen: other.lastSeen,
+          profilePic: other.profilePic,
           lastMessage: conv.lastMessage?.text || "",
           chatId: conv._id,
         };
@@ -119,6 +122,7 @@ export default function ChatPage() {
               id: otherUser._id,
               username: otherUser.username,
               lastSeen: otherUser.lastSeen,
+              profilePic: otherUser.profilePic,
             },
             ...prev,
           ];
@@ -393,7 +397,31 @@ useEffect(() => {
       {/* ── Sidebar ── */}
       <div className="sidebar" style={{ width: `${sidebarWidth}px` }}>
         <div className="sidebar-header">
-          <h3>Hi, {username}</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                background: currentUser?.profilePic ? `url(${currentUser.profilePic}) center/cover` : "var(--color-accent-light)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                border: "2px solid var(--color-surface-2)",
+                overflow: "hidden"
+              }}
+              onClick={() => navigate("/settings")}
+              title="Profile Settings"
+            >
+              {!currentUser?.profilePic && (
+                <span style={{ color: "var(--color-accent-text)", fontSize: "14px" }}>
+                  {getInitials(username)}
+                </span>
+              )}
+            </div>
+            <h3 style={{ margin: 0 }}>Hi, {username}</h3>
+          </div>
 
           <div className="notification" style={{ display: "flex", gap: "6px" }}>
             <button
@@ -434,8 +462,14 @@ useEffect(() => {
 
             {searchResults.map((u) => (
               <div key={u.id} className="user search-user">
-                <div className="user-avatar search-user-avatar">
-                  {u.username[0].toUpperCase()}
+                <div className="user-avatar search-user-avatar" style={{
+                   background: u.profilePic ? `url(${u.profilePic}) center/cover` : "var(--color-accent-light)",
+                   display: "flex",
+                   alignItems: "center",
+                   justifyContent: "center",
+                   overflow: "hidden"
+                 }}>
+                  {!u.profilePic && u.username[0].toUpperCase()}
                 </div>
 
                 <div className="user-name search-user-name">{u.username}</div>
@@ -472,7 +506,15 @@ useEffect(() => {
                     className={`user ${isActive ? "active" : ""}`}
                     onClick={() => selectPrivateChat(u.username, u.id)}
                   >
-                    <div className="user-avatar">{getInitials(u.username)}</div>
+                    <div className="user-avatar" style={{
+                       background: u.profilePic ? `url(${u.profilePic}) center/cover` : "var(--color-accent-light)",
+                       display: "flex",
+                       alignItems: "center",
+                       justifyContent: "center",
+                       overflow: "hidden"
+                     }}>
+                      {!u.profilePic && getInitials(u.username)}
+                    </div>
                     <div style={{ flex: 1 }}>
                       <div className="user-name-container" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div className="user-name">{u.username}</div>
