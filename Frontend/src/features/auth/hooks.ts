@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { disconnectSocket } from "../../services/socket";
 import { toast } from 'react-toastify';
@@ -6,8 +7,10 @@ import { BASE_URL } from "../../services/http";
 
 export const useAuth = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const login = async (identifier: string, password: string) => {
+    setLoading(true);
     try {
       const res = await axios.post(`${BASE_URL}/api/auth/login`, {
         identifier,
@@ -26,10 +29,13 @@ export const useAuth = () => {
     } catch (err) {
       console.error(err);
       toast("Server error");
+    } finally {
+      setLoading(false);
     }
   };
 
   const signup = async (email: string, username: string, password: string) => {
+    setLoading(true);
     try {
       const res = await axios.post(`${BASE_URL}/api/auth/signup`, {
         email,
@@ -49,6 +55,8 @@ export const useAuth = () => {
     } catch (err) {
       console.error(err);
       toast("Server error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,5 +73,5 @@ export const useAuth = () => {
     localStorage.setItem("user", JSON.stringify(user));
   };
 
-  return { login, signup, logout, updateProfilePic };
+  return { login, signup, logout, updateProfilePic, loading };
 };

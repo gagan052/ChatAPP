@@ -5,33 +5,45 @@ import "./auth.css";
 
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, loading } = useAuth();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    login(identifier, password);
+  };
+
   return (
     <div className="auth-container">
-      <div className="auth-card">
+      <form className="auth-card" onSubmit={handleSubmit}>
         <h2>Welcome Back </h2>
 
         <input
           placeholder="Username or Email"
+          value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
+          required
         />
 
         <input
           type="password"
           placeholder="Password"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
-        <button onClick={() => login(identifier, password)}>Login</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
 
         <p>
           Don't have an account? <Link to="/signup">Signup</Link>
         </p>
-      </div>
+      </form>
     </div>
   );
 }
