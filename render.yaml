@@ -23,8 +23,17 @@ services:
     buildCommand: cd Frontend && npm install && npm run build
     publishPath: Frontend/dist
     routes:
-      # This is the crucial part for React Router (SPA)
-      # It redirects all requests to index.html so the client-side router can take over
+      # Rewrites all routes to index.html for SPA support
       - type: rewrite
         source: /*
+        destination: /index.html
+      # Explicitly handle common routes as a fallback
+      - type: rewrite
+        source: /chat
+        destination: /index.html
+      - type: rewrite
+        source: /signup
+        destination: /index.html
+      - type: rewrite
+        source: /settings
         destination: /index.html
