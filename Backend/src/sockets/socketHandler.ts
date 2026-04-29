@@ -103,19 +103,18 @@ export const handleSockets = (io: Server) => {
     );
 
     socket.on("mark_seen", async ({ chatId, userId }) => {
-      const messages = await Message.find({
-        chatId,
-        sender: { $ne: userId },
-      });
+      try {
+        const messages = await Message.find({
+          chatId,
+          sender: { $ne: userId },
+          "status.userId": userId,
+          "status.seen": null,
+        });
 
-      for (const msg of messages) {
-        const alreadySeen = msg.status.find(
-          (s: any) => String(s.userId) === String(userId) && s.seen
-        );
-
-        if (!alreadySeen) {
-          await Message.updateOne(
-            { _id: msg._id },
+        if (messages.length > 0) {
+          const messageIds = messages.map((m) => m._id);
+          await Message.updateMany(
+            { _id: { $in: messageIds } },
             {
               $set: {
                 "status.$[elem].seen": new Date(),
@@ -126,12 +125,22 @@ export const handleSockets = (io: Server) => {
             }
           );
 
-          io.to(chatId).emit("message_seen", {
-            messageId: msg._id,
+          io.to(chatId).emit("messages_seen", {
+            messageIds,
+            chatId,
             userId,
+            seenAt: new Date(),
           });
         }
+      } catch (err) {
+        console.error("mark_seen error:", err);
       }
+    });
+
+    socket.on("join_chat", (chatId: string) => {
+      if (!chatId) return;
+      socket.join(chatId);
+      console.log(`Socket ${socket.id} joined chat room: ${chatId}`);
     });
 
     socket.on(

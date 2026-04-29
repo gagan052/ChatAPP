@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { onMessage, offMessage, onMessageUpdated, offMessageUpdated, onMessageDeleted, offMessageDeleted, onChatCleared, offChatCleared } from "./socket";
+import { onMessage, offMessage, onMessageUpdated, offMessageUpdated, onMessageDeleted, offMessageDeleted, onChatCleared, offChatCleared, onMessagesSeen, offMessagesSeen } from "./socket";
 import { BASE_URL } from "../../services/http";
+import { socket } from "../../services/socket";
 
 // const BASE_URL = "http://localhost:3001";
 
@@ -48,6 +49,14 @@ export const useChat = (myUserId: string, selectedUserId: string | null) => {
 
       if (!isRelevant) return;
 
+      // Mark as seen immediately if we are the receiver
+      if (msgSenderId !== myUserId) {
+        socket.emit("mark_seen", {
+          chatId: msg.chatId,
+          userId: myUserId,
+        });
+      }
+
       setMessages((prev) => {
       
         if (prev.some((m) => String(m._id) === String(msg._id))) return prev;
@@ -71,15 +80,34 @@ export const useChat = (myUserId: string, selectedUserId: string | null) => {
       setMessages([]);
     };
 
+    const messagesSeenHandler = ({ messageIds, userId: seenByUserId, seenAt }: any) => {
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (messageIds.includes(msg._id)) {
+            const updatedStatus = msg.status.map((s: any) => {
+              if (String(s.userId) === String(seenByUserId)) {
+                return { ...s, seen: seenAt };
+              }
+              return s;
+            });
+            return { ...msg, status: updatedStatus };
+          }
+          return msg;
+        })
+      );
+    };
+
     onMessageUpdated(updateHandler);
     onMessageDeleted(deleteHandler);
     onChatCleared(clearHandler);
+    onMessagesSeen(messagesSeenHandler);
 
     return () => {
       offMessage(handler);
       offMessageUpdated(updateHandler);
       offMessageDeleted(deleteHandler);
       offChatCleared(clearHandler);
+      offMessagesSeen(messagesSeenHandler);
     };
   }, [myUserId]);
 

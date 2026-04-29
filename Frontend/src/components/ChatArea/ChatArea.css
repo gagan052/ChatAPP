@@ -3,6 +3,7 @@
     align-items: center;
     justify-content: flex-end;
     gap: 5px;
+    color: var(--color-text-primary);
 }
 
 .msg-status {
@@ -12,5 +13,5 @@
 }
 
 .msg-status.seen {
-  color: #3b82f6;
+  color: #0461f6;
 }

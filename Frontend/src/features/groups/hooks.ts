@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { onGroupMessage, offGroupMessage, onMessageUpdated, offMessageUpdated, onMessageDeleted, offMessageDeleted, onChatCleared, offChatCleared } from "../chat/socket";
+import { onGroupMessage, offGroupMessage, onMessageUpdated, offMessageUpdated, onMessageDeleted, offMessageDeleted, onChatCleared, offChatCleared, onMessagesSeen, offMessagesSeen } from "../chat/socket";
 import { api } from "../../services/http";
+import { socket } from "../../services/socket";
 
 export const fetchGroups = async () => {
   const data = await api("/api/groups");
@@ -52,6 +53,14 @@ export const useGroupChat = (myUserId: string, selectedGroupId: string | null) =
       if (!msg._id || !msg.text) return;
       if (msg.groupId !== selectedGroupRef.current) return;
 
+      const msgSenderId = String(msg.sender?._id ?? msg.sender);
+      if (msgSenderId !== myUserId) {
+        socket.emit("mark_seen", {
+          chatId: msg.chatId,
+          userId: myUserId,
+        });
+      }
+
       setMessages((prev) => {
         if (prev.some((m) => String(m._id) === String(msg._id))) return prev;
         return [...prev, msg];
@@ -77,15 +86,35 @@ export const useGroupChat = (myUserId: string, selectedGroupId: string | null) =
       setMessages([]);
     };
 
+    const messagesSeenHandler = ({ messageIds, chatId, userId: seenByUserId, seenAt }: any) => {
+      if (chatId !== selectedGroupRef.current) return;
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (messageIds.includes(msg._id)) {
+            const updatedStatus = msg.status.map((s: any) => {
+              if (String(s.userId) === String(seenByUserId)) {
+                return { ...s, seen: seenAt };
+              }
+              return s;
+            });
+            return { ...msg, status: updatedStatus };
+          }
+          return msg;
+        })
+      );
+    };
+
     onMessageUpdated(updateHandler);
     onMessageDeleted(deleteHandler);
     onChatCleared(clearHandler);
+    onMessagesSeen(messagesSeenHandler);
     
     return () => {
       offGroupMessage(handler);
       offMessageUpdated(updateHandler);
       offMessageDeleted(deleteHandler);
       offChatCleared(clearHandler);
+      offMessagesSeen(messagesSeenHandler);
     };
   }, [myUserId]);
 

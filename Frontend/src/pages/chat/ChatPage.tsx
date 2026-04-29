@@ -439,7 +439,7 @@ useEffect(() => {
               onClick={() => setShowModal(true)}
               title="New group"
             >
-              <i className="fa-solid fa-people-group" style={{ color: "rgb(24, 60, 233)" }}></i>
+              <i className="fa-solid fa-people-group" style={{ color: "rgb(255, 255, 255)" }}></i>
             </button>
 
             <button className="logout-btn" onClick={logout}>

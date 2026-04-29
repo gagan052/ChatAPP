@@ -67,3 +67,15 @@ export const onChatCleared = (cb: (data: { chatId: string }) => void) => {
 export const offChatCleared = (cb: (data: { chatId: string }) => void) => {
   socket.off("chat:cleared", cb);
 };
+
+export const onMessagesSeen = (cb: (data: { messageIds: string[]; chatId: string; userId: string; seenAt: string }) => void) => {
+  socket.on("messages_seen", cb);
+};
+
+export const offMessagesSeen = (cb: (data: { messageIds: string[]; chatId: string; userId: string; seenAt: string }) => void) => {
+  socket.off("messages_seen", cb);
+};
+
+export const joinChatRoom = (chatId: string) => {
+  socket.emit("join_chat", chatId);
+};

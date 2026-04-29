@@ -57,7 +57,7 @@
 .auth-card p {
   text-align: center;
   font-size: var(--font-size-md);
-  color: var(--color-text-muted);
+  color: var(--color-text-primary);
 }
 
 .auth-card p a {

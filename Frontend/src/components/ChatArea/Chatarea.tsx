@@ -5,6 +5,7 @@ import {
   editMessage,
   deleteMessageSocket,
   clearChatSocket,
+  joinChatRoom,
 } from "../../features/chat/socket";
 import { toast } from "react-toastify";
 import "./ChatArea.css";
@@ -84,6 +85,8 @@ export default function ChatArea({
 
   useEffect(() => {
     if (!chatId) return;
+
+    joinChatRoom(chatId);
 
     socket.emit("mark_seen", {
       chatId,
@@ -312,7 +315,7 @@ export default function ChatArea({
                               <i
                                 className="fa-solid fa-pen-to-square"
                                 style={{
-                                  color: "rgb(24, 60, 233)",
+                                  color: "rgb(122, 140, 231)",
                                   fontSize: "13px",
                                 }}
                               ></i>
@@ -324,7 +327,7 @@ export default function ChatArea({
                               <i
                                 className="fa-solid fa-trash"
                                 style={{
-                                  color: "rgb(24, 60, 233)",
+                                  color: "rgb(122, 140, 231)",
                                   fontSize: "13px",
                                 }}
                               ></i>
@@ -344,15 +347,36 @@ export default function ChatArea({
                       {isOwn && (
                         <span className="msg-status">
                           {(() => {
-                            const status = m.status?.find(
-                              (s: any) =>
-                                String(s.userId) === String(selectedUserId)
+                            const otherStatuses = m.status?.filter(
+                              (s: any) => String(s.userId) !== String(userId)
                             );
 
-                            if (!status) return "✓"; // sent
+                            if (!otherStatuses || otherStatuses.length === 0)
+                              return "✓";
 
-                            if (status.seen) return "✓✓"; // seen
-                            if (status.delivered) return "✓✓"; // delivered
+                            const anySeen = otherStatuses.some((s: any) => s.seen);
+                            if (anySeen) {
+                              return (
+                                <i
+                                  className="fa-solid fa-check-double"
+                                  style={{ color: "#34b7f1" }}
+                                  title="Seen"
+                                ></i>
+                              );
+                            }
+
+                            const anyDelivered = otherStatuses.some(
+                              (s: any) => s.delivered
+                            );
+                            if (anyDelivered) {
+                              return (
+                                <i
+                                  className="fa-solid fa-check-double"
+                                  style={{ color: "var(--color-text-faint)" }}
+                                  title="Delivered"
+                                ></i>
+                              );
+                            }
 
                             return "✓";
                           })()}

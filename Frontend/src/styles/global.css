@@ -3,18 +3,34 @@
    ============================================================ */
 :root {
   /* Core palette */
-  --color-base:        #aef49f;   /* page background #142a0f */
-  --color-surface:     #dfe7f3;
+  /* --color-base:        #aef49f;   page background #142a0f */
+
+  --color-base:        #161717;
+  
+  /* --color-surface:     #dfe7f3; */
+
+  --color-surface:     #161717;
+
+
   --color-surface-nav-bar: #93c0f7;
-  --color-other-char-bar: #b4b6b4;   /* cards, sidebar, headers */
+  /* --color-other-char-bar: #a8aba8;   cards, sidebar, headers */
+  --color-other-char-bar: #154D37;
   --color-chat-bar:    #84cc6c;
   --color-surface-2:   #3589f0;   /* borders, dividers */
   --color-surface-3:   #f45916;   /* hover states */
 
   /* Text */
-  --color-text-primary:   #060606;
+  /* --color-text-primary:   #060606; */
+
+  --color-text-primary:   #f8f5f5;
+
+   --color-text-primary-black:   #050505;
+
+
   --color-text-login :    #f6f2f2;  /* headings, main content #f1f5f9*/
-  --color-text-secondary: #1e1f1f;  /* body text #e2e8f0*/
+
+  --color-text-secondary: #f9fbfb;  /* body text #e2e8f0 */
+
   --color-text-chat-bar:  #1e1f1f;
   --color-text-muted:     #070707;  /* placeholders, labels */
   --color-text-faint:     #576982;  /* timestamps, hints */
