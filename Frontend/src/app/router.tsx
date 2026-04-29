@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createHashRouter } from "react-router-dom";
 import LoginPage from "../pages/auth/LoginPage";
 import SignupPage from "../pages/auth/SignupPage";
 import ChatPage from "../pages/chat/ChatPage";
@@ -9,7 +9,7 @@ const ProtectedRoute = ({ children }: any) => {
   return token ? children : <LoginPage />;
 };
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   { path: "/", element: <LoginPage /> },
   { path: "/signup", element: <SignupPage /> },
   {
