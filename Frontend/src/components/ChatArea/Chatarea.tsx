@@ -10,6 +10,7 @@ import {
 import { toast } from "react-toastify";
 import "./ChatArea.css";
 import { socket } from "../../services/socket";
+import { uploadFile } from "../../features/auth/api";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -18,6 +19,10 @@ function getInitials(name: string) {
 interface Message {
   _id?: string;
   text: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
+  fileSize?: number;
   createdAt?: string;
   isEdited?: boolean;
   sender:
@@ -82,6 +87,7 @@ export default function ChatArea({
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [box, setBox] = useState(false);
 
   useEffect(() => {
     if (!chatId) return;
@@ -122,47 +128,62 @@ export default function ChatArea({
   };
 
   const handleClear = () => {
-  if (!chatId) return;
+    if (!chatId) return;
 
-  if (!toast.isActive("clear-chat-confirm")) {
-    toast.info(
-      <div>
-        Are you sure you want to clear all messages? This cannot be undone.
-        <div
-          style={{
-            marginTop: "10px",
-            display: "flex",
-            gap: "10px",
-            justifyContent: "flex-end",
-          }}
-        >
-          <button
-            onClick={() => {
-              toast.dismiss("clear-chat-confirm");
-
-              clearChatSocket(
-                chatId,
-                chatType === "private"
-                  ? selectedUserId || undefined
-                  : undefined,
-                chatType === "group"
-              );
+    if (!toast.isActive("clear-chat-confirm")) {
+      toast.info(
+        <div>
+          Are you sure you want to clear all messages? This cannot be undone.
+          <div
+            style={{
+              marginTop: "10px",
+              display: "flex",
+              gap: "10px",
+              justifyContent: "flex-end",
             }}
           >
-            Yes, Clear
-          </button>
+            <button
+              onClick={() => {
+                toast.dismiss("clear-chat-confirm");
 
-          <button
-            onClick={() => toast.dismiss("clear-chat-confirm")}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>,
-      { toastId: "clear-chat-confirm", autoClose: false }
-    );
-  }
-};
+                clearChatSocket(
+                  chatId,
+                  chatType === "private"
+                    ? selectedUserId || undefined
+                    : undefined,
+                  chatType === "group"
+                );
+              }}
+            >
+              Yes, Clear
+            </button>
+
+            <button onClick={() => toast.dismiss("clear-chat-confirm")}>
+              Cancel
+            </button>
+          </div>
+        </div>,
+        { toastId: "clear-chat-confirm", autoClose: false }
+      );
+    }
+  };
+
+  const handleFileSend = async (file: File) => {
+    try {
+      const data = await uploadFile(file);
+
+      socket.emit("private_message", {
+        toUserId: selectedUserId,
+        text: "",
+        fileUrl: data.url,
+        fileName: data.name,
+        fileType: data.type,
+        fileSize: data.size,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const headerName =
     chatType === "private" ? selectedUser : selectedGroup?.groupInfo?.name;
@@ -172,7 +193,7 @@ export default function ChatArea({
   const isOnline =
     chatType === "private" &&
     selectedUser &&
-    onlineUsers.includes(selectedUser);
+    onlineUsers.includes(selectedUser || "");
 
   return (
     <div className="chat-area">
@@ -202,16 +223,18 @@ export default function ChatArea({
                   chatType === "group" ? "group-avatar" : ""
                 }`}
                 style={{
-                  background: (chatType === "private" && selectedUserObj?.profilePic) 
-                    ? `url(${selectedUserObj.profilePic}) center/cover` 
-                    : "var(--color-accent-light)",
+                  background:
+                    chatType === "private" && selectedUserObj?.profilePic
+                      ? `url(${selectedUserObj.profilePic}) center/cover`
+                      : "var(--color-accent-light)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  overflow: "hidden"
+                  overflow: "hidden",
                 }}
               >
-                {!(chatType === "private" && selectedUserObj?.profilePic) && headerInitials}
+                {!(chatType === "private" && selectedUserObj?.profilePic) &&
+                  headerInitials}
               </div>
               <div>
                 <div className="chat-header-name">{headerName}</div>
@@ -261,7 +284,11 @@ export default function ChatArea({
               );
               const isOwn = msgSenderId === userId;
               const senderName = (senderObj as any)?.username ?? "";
-              const senderPic = (senderObj as any)?.profilePic ?? (msgSenderId === selectedUserId ? selectedUserObj?.profilePic : null);
+              const senderPic =
+                (senderObj as any)?.profilePic ??
+                (msgSenderId === selectedUserId
+                  ? selectedUserObj?.profilePic
+                  : null);
 
               return (
                 <div
@@ -269,14 +296,20 @@ export default function ChatArea({
                   className={`msg-row ${isOwn ? "own" : ""}`}
                 >
                   {!isOwn && (
-                    <div className="msg-bubble-avatar" style={{
-                      background: senderPic ? `url(${senderPic}) center/cover` : "var(--color-accent-light)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      overflow: "hidden"
-                    }}>
-                      {!senderPic && getInitials(senderName || selectedUser || "?")}
+                    <div
+                      className="msg-bubble-avatar"
+                      style={{
+                        background: senderPic
+                          ? `url(${senderPic}) center/cover`
+                          : "var(--color-accent-light)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {!senderPic &&
+                        getInitials(senderName || selectedUser || "?")}
                     </div>
                   )}
                   <div className={`msg-wrap ${isOwn ? "own" : "other"}`}>
@@ -304,9 +337,31 @@ export default function ChatArea({
                     ) : (
                       <>
                         <div className={`msg ${isOwn ? "own" : ""}`}>
-                          {m.text}
-                          {m.isEdited && (
-                            <span className="msg-edited-tag">(edited)</span>
+                          {m.fileUrl ? (
+                            m.fileType?.startsWith("image") ? (
+                              <img src={m.fileUrl} className="chat-image" />
+                            ) : m.fileType?.startsWith("video") ? (
+                              <video
+                                controls
+                                src={m.fileUrl}
+                                className="chat-video"
+                              />
+                            ) : (
+                              <a
+                                href={m.fileUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                📄 {m.fileName || "Download File"}
+                              </a>
+                            )
+                          ) : (
+                            <>
+                              {m.text}
+                              {m.isEdited && (
+                                <span className="msg-edited-tag">(edited)</span>
+                              )}
+                            </>
                           )}
                         </div>
                         {isOwn && m._id && (
@@ -354,7 +409,9 @@ export default function ChatArea({
                             if (!otherStatuses || otherStatuses.length === 0)
                               return "✓";
 
-                            const anySeen = otherStatuses.some((s: any) => s.seen);
+                            const anySeen = otherStatuses.some(
+                              (s: any) => s.seen
+                            );
                             if (anySeen) {
                               return (
                                 <i
@@ -392,6 +449,37 @@ export default function ChatArea({
 
           {/* Input */}
           <div className="chat-input">
+            <div
+              className="file-uploder"
+              onClick={() => {
+                if (box == true) setBox(false);
+                else setBox(true);
+              }}
+            >
+              <i
+                className="fa-solid fa-plus"
+                style={{ color: "rgb(255, 255, 255)" }}
+              ></i>
+              {box && (
+                <div className="box">
+                  <input
+                    type="file"
+                    style={{ display: "none" }}
+                    id="fileInput"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        handleFileSend(e.target.files[0]);
+                      }
+                    }}
+                  />
+
+                  <label htmlFor="fileInput">
+                    <i className="fa-solid fa-file"></i>
+                    
+                  </label>
+                </div>
+              )}
+            </div>
             <input
               value={text}
               onChange={(e) => onTextChange(e.target.value)}

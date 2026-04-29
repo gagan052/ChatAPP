@@ -1,0 +1,30 @@
+# Render Deployment Configuration
+# For more info, see https://render.com/docs/yaml-spec
+
+services:
+  # Backend Web Service
+  - type: web
+    name: chat-app-backend
+    env: node
+    plan: free
+    buildCommand: cd Backend && npm install
+    startCommand: cd Backend && npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 3001
+
+  # Frontend Static Site
+  - type: static
+    name: chat-app-frontend
+    env: static
+    plan: free
+    buildCommand: cd Frontend && npm install && npm run build
+    publishPath: Frontend/dist
+    routes:
+      # This is the crucial part for React Router (SPA)
+      # It redirects all requests to index.html so the client-side router can take over
+      - type: rewrite
+        source: /*
+        destination: /index.html

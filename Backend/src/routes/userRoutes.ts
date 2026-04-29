@@ -4,13 +4,20 @@ import Conversation from "../models/conversation";
 import Invitation from "../models/invitation";
 import { upload } from "../middlewares/upload";
 import { protect } from "../middlewares/authMiddleware";
+import cloudinary from "../config/cloudinary";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
     const users = await User.find().select("_id username profilePic");
-    res.json(users.map((u) => ({ id: u._id, username: u.username, profilePic: u.profilePic })));
+    res.json(
+      users.map((u) => ({
+        id: u._id,
+        username: u.username,
+        profilePic: u.profilePic,
+      }))
+    );
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
@@ -33,7 +40,6 @@ router.get("/search", async (req: any, res: any) => {
     const results = [];
 
     for (const user of users) {
-      
       if (String(user._id) === String(currentUserId)) continue;
 
       const privateConversation = await Conversation.findOne({
@@ -84,12 +90,35 @@ router.post(
   protect,
   upload.single("image"),
   async (req: any, res) => {
-    const user : any = await User.findById(req.user.id);
+    const user: any = await User.findById(req.user.id);
+
+    if (user.profilePic) {
+      const publicId = user.profilePic.split("/").pop().split(".")[0];
+      await cloudinary.uploader.destroy(`chat-app/${publicId}`);
+    }
 
     user.profilePic = req.file.path; // cloudinary URL
     await user.save();
 
     res.json({ profilePic: user.profilePic });
+  }
+);
+
+router.post(
+  "/upload-file",
+  protect,
+  upload.single("file"),
+  async (req: any, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    res.json({
+      url: req.file.path,
+      name: req.file.originalname,
+      type: req.file.mimetype,
+      size: req.file.size,
+    });
   }
 );
 

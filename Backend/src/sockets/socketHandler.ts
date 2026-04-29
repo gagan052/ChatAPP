@@ -32,9 +32,28 @@ export const handleSockets = (io: Server) => {
     // ── Private message ──
     socket.on(
       "private_message",
-      async ({ toUserId, text }: { toUserId: string; text: string }) => {
+      async ({
+        toUserId,
+        text,
+        fileUrl,
+        fileName,
+        fileType,
+        fileSize,
+      }: {
+        toUserId: string;
+        text?: string;
+        fileUrl?: string;
+        fileName?: string;
+        fileType?: string;
+        fileSize?: number;
+      }) => {
         const fromUserId = socketToUser[socket.id];
-        if (!fromUserId || !toUserId || !text?.trim()) return;
+
+        if (!fromUserId || !toUserId) return;
+
+        // must have at least text OR file
+        if (!text?.trim() && !fileUrl) return;
+
         try {
           let conversation = await Conversation.findOne({
             type: "private",
@@ -55,7 +74,11 @@ export const handleSockets = (io: Server) => {
           const msg = await Message.create({
             chatId: conversation._id,
             sender: fromUserId,
-            text: text.trim(),
+            text: text?.trim() || "",
+            fileUrl: fileUrl || null,
+            fileName: fileName || null,
+            fileType: fileType || null,
+            fileSize: fileSize || null,
             status: [
               {
                 userId: fromUserId,
@@ -67,17 +90,6 @@ export const handleSockets = (io: Server) => {
               },
             ],
           });
-
-          // if (onlineUsers[toUserId]) {
-          //   await Message.findByIdAndUpdate(msg._id, {
-          //     $push: {
-          //       status: {
-          //         userId: toUserId,
-          //         delivered: new Date(),
-          //       },
-          //     },
-          //   });
-          // }
 
           const updatedMsg = await Message.findById(msg._id).populate(
             "sender",
