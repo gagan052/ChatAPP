@@ -8,6 +8,19 @@ import cloudinary from "../config/cloudinary";
 
 const router = express.Router();
 
+const handleSingleUpload =
+  (fieldName: string) => (req: any, res: any, next: any) => {
+    upload.single(fieldName)(req, res, (err: any) => {
+      if (err) {
+        console.error("UPLOAD MIDDLEWARE ERROR:", err);
+        return res
+          .status(500)
+          .json({ message: err?.message || "File upload failed" });
+      }
+      return next();
+    });
+  };
+
 router.get("/", async (req, res) => {
   try {
     const users = await User.find().select("_id username profilePic");
@@ -88,7 +101,7 @@ router.get("/search", async (req: any, res: any) => {
 router.post(
   "/upload-profile",
   protect,
-  upload.single("image"),
+  handleSingleUpload("image"),
   async (req: any, res) => {
     try {
       if (!req.file) {
@@ -129,7 +142,7 @@ router.post(
 router.post(
   "/upload-file",
   protect,
-  upload.single("file"),
+  handleSingleUpload("file"),
   async (req: any, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
