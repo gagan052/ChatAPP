@@ -27,7 +27,7 @@ export const createGroup = async (req:any, res:any) => {
       },
     });
 
-    const populated = await group.populate("participants", "username _id profilePic");
+    const populated = await group.populate("participants", "username _id profilePic").populate("groupInfo.admin", "username _id profilePic");
 
     res.json({ success: true, group: populated });
   } catch (err) {
@@ -46,7 +46,8 @@ export const getGroups = async (req:any, res:any) => {
       participants: userId,
     })
       .populate("participants", "username _id profilePic")
-      .populate("lastMessage", "text sender createdAt")
+      .populate("lastMessage", "text fileUrl fileType sender createdAt")
+      .populate("groupInfo.admin", "username _id profilePic")
       .sort({ updatedAt: -1 });
 
     res.json({ success: true, groups });
@@ -69,6 +70,46 @@ export const getGroupMessages = async (req:any, res:any) => {
     res.json(messages);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// PUT /api/groups/:groupId/update
+export const updateGroup = async (req:any, res:any) => {
+  try {
+    const { groupId } = req.params;
+    const { name, avatar } = req.body;
+    const userId = req.user.id;
+
+    const group = await Conversation.findOne({
+      _id: groupId,
+      type: "group",
+      participants: userId,
+    });
+
+    if (!group) {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    const adminId = group.groupInfo?.admin;
+    if (!adminId || adminId.toString() !== userId) {
+      return res.status(403).json({ success: false, message: "Only admin can update group info" });
+    }
+
+    if (name?.trim()) {
+      group.groupInfo.name = name.trim();
+    }
+
+    if (avatar) {
+      group.groupInfo.avatar = avatar;
+    }
+
+    await group.save();
+    const populated = await group.populate("participants", "username _id profilePic").populate("groupInfo.admin", "username _id profilePic");
+
+    res.json({ success: true, group: populated });
+  } catch (err) {
+    console.error("updateGroup error:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

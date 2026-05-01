@@ -36,16 +36,12 @@ export const handleSockets = (io: Server) => {
         toUserId,
         text,
         fileUrl,
-        fileName,
         fileType,
-        fileSize,
       }: {
         toUserId: string;
         text?: string;
         fileUrl?: string;
-        fileName?: string;
         fileType?: string;
-        fileSize?: number;
       }) => {
         const fromUserId = socketToUser[socket.id];
 
@@ -76,9 +72,7 @@ export const handleSockets = (io: Server) => {
             sender: fromUserId,
             text: text?.trim() || "",
             fileUrl: fileUrl || null,
-            fileName: fileName || null,
             fileType: fileType || null,
-            fileSize: fileSize || null,
             status: [
               {
                 userId: fromUserId,
@@ -235,7 +229,9 @@ export const handleSockets = (io: Server) => {
           const payload = {
             messageId,
             chatId,
-            newLastMessage: latestMsg?.text ?? "", //  frontend can use this directly
+            newLastMessage: latestMsg?.text ?? "",
+            newLastMessageFileUrl: latestMsg?.fileUrl ?? null,
+            newLastMessageFileType: latestMsg?.fileType ?? null,
           };
 
           if (isGroup && chatId) {
@@ -310,9 +306,9 @@ export const handleSockets = (io: Server) => {
     // ── Group message ──
     socket.on(
       "group_message",
-      async ({ groupId, text }: { groupId: string; text: string }) => {
+      async ({ groupId, text, fileUrl, fileType }: { groupId: string; text?: string; fileUrl?: string; fileType?: string }) => {
         const fromUserId = socketToUser[socket.id];
-        if (!fromUserId || !groupId || !text?.trim()) return;
+        if (!fromUserId || !groupId || (!text?.trim() && !fileUrl)) return;
         try {
           const conversation = await Conversation.findOne({
             _id: groupId,
@@ -328,7 +324,9 @@ export const handleSockets = (io: Server) => {
           const msg = await Message.create({
             chatId: groupId,
             sender: fromUserId,
-            text: text.trim(),
+            text: text?.trim() || "",
+            fileUrl: fileUrl || null,
+            fileType: fileType || null,
             status: [],
           });
           const populated = await msg.populate("sender", "username _id");

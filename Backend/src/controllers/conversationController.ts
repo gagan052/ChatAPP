@@ -10,7 +10,7 @@ export const getUserConversations = async (req:any, res:any) => {
       participants: userId,
     })
       .populate("participants", "username _id lastSeen profilePic")
-      .populate("lastMessage", "text createdAt sender")
+      .populate("lastMessage", "text fileUrl fileType createdAt sender")
       .sort({ updatedAt: -1 });
  
     res.json(conversations);

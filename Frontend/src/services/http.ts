@@ -5,12 +5,15 @@ export const BASE_URL = window.location.hostname === "localhost"
 export const api = async (url: string, options?: RequestInit) => {
   const token = localStorage.getItem("token");
   
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  const headers: Record<string, string> = {};
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const isFormData = options?.body instanceof FormData;
+  if (!isFormData && options?.method !== "GET") {
+    headers["Content-Type"] = "application/json";
   }
 
   const res = await fetch(`${BASE_URL}${url}`, {

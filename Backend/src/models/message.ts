@@ -18,6 +18,14 @@ const messageSchema = new mongoose.Schema(
       type: String,
     },
 
+    fileUrl: {
+      type: String,
+    },
+
+    fileType: {
+      type: String,
+    },
+
     isEdited: {
       type: Boolean,
       default: false,

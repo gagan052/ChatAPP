@@ -1,4 +1,11 @@
 import { api } from "../../services/http";
 
-export const fetchMessages = (u1: string, u2: string) =>
-  api(`/api/messages/${u1}/${u2}`);
+export const uploadChatFile = async (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return api("/api/messages/upload", {
+    method: "POST",
+    body: formData,
+  });
+};

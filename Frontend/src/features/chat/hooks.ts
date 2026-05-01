@@ -35,8 +35,8 @@ export const useChat = (myUserId: string, selectedUserId: string | null) => {
     const handler = (msg: any) => {
       const currentSelectedUserId = selectedUserIdRef.current;
 
-      // Must have _id and text to be a valid saved message
-      if (!msg._id || !msg.text) return;
+      // Must have _id and either text or fileUrl
+      if (!msg._id || (!msg.text && !msg.fileUrl)) return;
 
       const msgSenderId: string = String(msg.sender?._id ?? msg.sender);
       const otherParticipantId =

@@ -4,6 +4,7 @@ import { connectSocket } from "../../services/socket";
 import { useChat } from "../../features/chat/hooks";
 import { useGroupChat, useGroups } from "../../features/groups/hooks";
 import { sendMessage, sendGroupMessage } from "../../features/chat/socket";
+import { uploadChatFile } from "../../features/chat/api";
 import { useUsers } from "../../features/users/hooks";
 import { useAuth } from "../../features/auth/hooks";
 import CreateGroupModal from "../../components/createGroupModal";
@@ -50,6 +51,7 @@ export default function ChatPage() {
 
   const isResizing = useRef(false);
   const [text, setText] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -81,6 +83,8 @@ export default function ChatPage() {
           lastSeen: other.lastSeen,
           profilePic: other.profilePic,
           lastMessage: conv.lastMessage?.text || "",
+          lastMessageFileUrl: conv.lastMessage?.fileUrl,
+          lastMessageFileType: conv.lastMessage?.fileType,
           chatId: conv._id,
         };
       }).filter(Boolean);
@@ -160,11 +164,17 @@ export default function ChatPage() {
         }));
       }
 
+      const lastMessageText = msg.text || (msg.fileUrl ? "📎 File" : "");
       
       setChatUsers((prev) => 
         prev.map((u) => {
           if (u.id === msgSenderId || (msgSenderId === userId && u.id === selectedUserId)) {
-            return { ...u, lastMessage: msg.text };
+            return { 
+              ...u, 
+              lastMessage: lastMessageText, 
+              lastMessageFileUrl: msg.fileUrl, 
+              lastMessageFileType: msg.fileType 
+            };
           }
           return u;
         })
@@ -202,8 +212,9 @@ export default function ChatPage() {
     };
   }, []);
 
-  if (!username) {
-    window.location.href = "/";
+  const token = localStorage.getItem("token");
+
+  if (!token) {
     return null;
   }
 
@@ -248,11 +259,27 @@ useEffect(() => {
  
 // 2. message:deleted — use newLastMessage from payload for instant update
 useEffect(() => {
-  const handler = ({ chatId, newLastMessage }: { messageId: string; chatId: string; newLastMessage: string }) => {
+  const handler = ({ 
+    chatId, 
+    newLastMessage, 
+    newLastMessageFileUrl, 
+    newLastMessageFileType 
+  }: { 
+    messageId: string; 
+    chatId: string; 
+    newLastMessage: string; 
+    newLastMessageFileUrl?: string | null; 
+    newLastMessageFileType?: string | null; 
+  }) => {
     setChatUsers((prev) =>
       prev.map((u) =>
         u.chatId === String(chatId)
-          ? { ...u, lastMessage: newLastMessage }
+          ? { 
+              ...u, 
+              lastMessage: newLastMessage, 
+              lastMessageFileUrl: newLastMessageFileUrl, 
+              lastMessageFileType: newLastMessageFileType 
+            }
           : u
       )
     );
@@ -270,7 +297,14 @@ useEffect(() => {
   const handler = ({ chatId }: { chatId: string }) => {
     setChatUsers((prev) =>
       prev.map((u) =>
-        u.chatId === String(chatId) ? { ...u, lastMessage: "" } : u
+        u.chatId === String(chatId) 
+          ? { 
+              ...u, 
+              lastMessage: "", 
+              lastMessageFileUrl: null, 
+              lastMessageFileType: null 
+            } 
+          : u
       )
     );
   };
@@ -329,14 +363,35 @@ useEffect(() => {
     }
   };
 
-  const handleSend = () => {
-    if (!text.trim()) return;
-    if (chatType === "private" && selectedUserId) {
-      sendMessage(selectedUserId, text.trim());
-    } else if (chatType === "group" && selectedGroup) {
-      sendGroupMessage(selectedGroup._id, text.trim());
+  const handleSend = async () => {
+    if (!text.trim() && !selectedFile) return;
+
+    try {
+      if (chatType === "private" && selectedUserId) {
+        if (selectedFile) {
+          const data = await uploadChatFile(selectedFile);
+          sendMessage(selectedUserId, text.trim(), { fileUrl: data.fileUrl, fileType: data.fileType });
+        } else {
+          sendMessage(selectedUserId, text.trim());
+        }
+      } else if (chatType === "group" && selectedGroup) {
+        if (selectedFile) {
+          const data = await uploadChatFile(selectedFile);
+          sendGroupMessage(selectedGroup._id, text.trim(), { fileUrl: data.fileUrl, fileType: data.fileType });
+        } else {
+          sendGroupMessage(selectedGroup._id, text.trim());
+        }
+      }
+      setText("");
+      setSelectedFile(null);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to send message");
     }
-    setText("");
+  };
+
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
   };
 
   const selectPrivateChat = (uName: string, uId: string) => {
@@ -496,9 +551,13 @@ useEffect(() => {
             <InvitationList onBack={() => setActiveTab("chats")} onAccept={goHome} />
           ) : (
             <>
-              {chatUsers.map((u) => {
+              {chatUsers.map((u: any) => {
                 const isActive =
                   chatType === "private" && selectedUserId === u.id;
+
+                const hasLastFile = u.lastMessageFileUrl;
+                const isLastImage = u.lastMessageFileType?.startsWith("image");
+                const isLastVideo = u.lastMessageFileType?.startsWith("video");
 
                 return (
                   <div
@@ -535,7 +594,20 @@ useEffect(() => {
                           </div>
                         )}
                       </div>
-                      <p className="last-message">{u.lastMessage || "No messages yet"}</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        {hasLastFile && (
+                          isLastImage ? (
+                            <i className="fa-solid fa-image" style={{ color: "var(--color-text-faint)" }}></i>
+                          ) : isLastVideo ? (
+                            <i className="fa-solid fa-video" style={{ color: "var(--color-text-faint)" }}></i>
+                          ) : (
+                            <i className="fa-solid fa-file" style={{ color: "var(--color-text-faint)" }}></i>
+                          )
+                        )}
+                        <span className="last-message">
+                          {u.lastMessage || (hasLastFile ? "📎 File" : "No messages yet")}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -550,27 +622,46 @@ useEffect(() => {
                     const isActive =
                       chatType === "group" && selectedGroup?._id === g._id;
 
+                    const hasLastFile = g.lastMessage?.fileUrl;
+                    const isLastImage = g.lastMessage?.fileType?.startsWith("image");
+                    const isLastVideo = g.lastMessage?.fileType?.startsWith("video");
+
                     return (
                       <div
                         key={g._id}
                         className={`user ${isActive ? "active" : ""}`}
                         onClick={() => selectGroupChat(g)}
                       >
-                        <div className="user-avatar group-avatar">
-                          {getInitials(g.groupInfo?.name || "G")}
+                        <div className="user-avatar group-avatar" style={{
+                          background: g.groupInfo?.avatar 
+                            ? `url(${g.groupInfo.avatar}) center/cover` 
+                            : undefined
+                        }}>
+                          {!g.groupInfo?.avatar && getInitials(g.groupInfo?.name || "G")}
                         </div>
 
                         <div className="user-meta">
                           <div className="user-name">{g.groupInfo?.name}</div>
-                          <div className="user-preview" style={{ 
-                            fontSize: "12px", 
-                            color: "var(--color-text-faint)",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            maxWidth: "150px"
-                          }}>
-                            {g.lastMessage?.text || `${g.participants?.length || 0} members`}
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            {hasLastFile && (
+                              isLastImage ? (
+                                <i className="fa-solid fa-image" style={{ color: "var(--color-text-faint)" }}></i>
+                              ) : isLastVideo ? (
+                                <i className="fa-solid fa-video" style={{ color: "var(--color-text-faint)" }}></i>
+                              ) : (
+                                <i className="fa-solid fa-file" style={{ color: "var(--color-text-faint)" }}></i>
+                              )
+                            )}
+                            <span className="user-preview" style={{ 
+                              fontSize: "12px", 
+                              color: "var(--color-text-faint)",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "150px"
+                            }}>
+                              {g.lastMessage?.text || (hasLastFile ? "📎 File" : `${g.participants?.length || 0} members`)}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -595,9 +686,20 @@ useEffect(() => {
         text={text}
         onTextChange={setText}
         onSend={handleSend}
+        onFileSelect={handleFileSelect}
+        selectedFile={selectedFile}
+        onClearSelectedFile={() => setSelectedFile(null)}
         userId={userId}
         onlineUsers={onlineUsers}
         selectedUserObj={selectedUserObj}
+        onGroupUpdated={(updatedGroup: any) => {
+          setSelectedGroup(updatedGroup);
+          setGroups((prev) =>
+            prev.map((g) =>
+              String(g._id) === String(updatedGroup._id) ? updatedGroup : g
+            )
+          );
+        }}
       />
 
       {showModal && (

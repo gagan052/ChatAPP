@@ -385,7 +385,7 @@
 .msg-sender-name {
   font-size: var(--font-size-sm);
   font-weight: 500;
-  color: var(--color-accent);
+  color: var(--color-text-faint);
   margin-bottom: 2px;
 }
 

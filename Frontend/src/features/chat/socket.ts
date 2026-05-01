@@ -1,11 +1,29 @@
 import { socket } from "../../services/socket";
 
-export const sendMessage = (toUserId: string, text: string) => {
-  socket.emit("private_message", { toUserId, text });
+export const sendMessage = (
+  toUserId: string,
+  text: string,
+  options?: { fileUrl?: string; fileType?: string }
+) => {
+  socket.emit("private_message", {
+    toUserId,
+    text,
+    fileUrl: options?.fileUrl,
+    fileType: options?.fileType,
+  });
 };
 
-export const sendGroupMessage = (groupId: string, text: string) => {
-  socket.emit("group_message", { groupId, text });
+export const sendGroupMessage = (
+  groupId: string,
+  text: string,
+  options?: { fileUrl?: string; fileType?: string }
+) => {
+  socket.emit("group_message", {
+    groupId,
+    text,
+    fileUrl: options?.fileUrl,
+    fileType: options?.fileType,
+  });
 };
 
 export const onMessage = (cb: (msg: any) => void) => {

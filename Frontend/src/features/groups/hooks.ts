@@ -15,6 +15,13 @@ export const createGroupApi = async (name: string, memberIds: string[]) => {
   });
 };
 
+export const updateGroupApi = async (groupId: string, data: { name?: string; avatar?: string }) => {
+  return api(`/api/groups/${groupId}/update`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+};
+
 const fetchGroupMessages = async (groupId: string) => {
   return api(`/api/groups/${groupId}/messages`);
 };
@@ -50,7 +57,7 @@ export const useGroupChat = (myUserId: string, selectedGroupId: string | null) =
 
   useEffect(() => {
     const handler = (msg: any) => {
-      if (!msg._id || !msg.text) return;
+      if (!msg._id || (!msg.text && !msg.fileUrl)) return;
       if (msg.groupId !== selectedGroupRef.current) return;
 
       const msgSenderId = String(msg.sender?._id ?? msg.sender);

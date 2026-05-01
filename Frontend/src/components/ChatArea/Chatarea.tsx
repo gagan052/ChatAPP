@@ -10,7 +10,7 @@ import {
 import { toast } from "react-toastify";
 import "./ChatArea.css";
 import { socket } from "../../services/socket";
-import { uploadFile } from "../../features/auth/api";
+import { uploadChatFile } from "../../features/chat/api";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -54,6 +54,16 @@ interface Group {
   participants?: any[];
 }
 
+interface Group {
+  _id: string;
+  groupInfo?: { 
+    name: string; 
+    admin?: { _id: string; username: string; profilePic?: string };
+    avatar?: string;
+  };
+  participants?: any[];
+}
+
 interface ChatAreaProps {
   chatType: "private" | "group";
   selectedUser: string | null;
@@ -64,9 +74,13 @@ interface ChatAreaProps {
   text: string;
   onTextChange: (val: string) => void;
   onSend: () => void;
+  onFileSelect?: (file: File) => void;
+  selectedFile?: File | null;
+  onClearSelectedFile?: () => void;
   userId: string;
   onlineUsers: string[];
   selectedUserObj?: ChatUser;
+  onGroupUpdated?: (updatedGroup: any) => void;
 }
 
 export default function ChatArea({
@@ -79,15 +93,18 @@ export default function ChatArea({
   text,
   onTextChange,
   onSend,
+  onFileSelect,
+  selectedFile,
+  onClearSelectedFile,
   userId,
   onlineUsers,
   selectedUserObj,
+  onGroupUpdated,
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
-  const [box, setBox] = useState(false);
 
   useEffect(() => {
     if (!chatId) return;
@@ -168,23 +185,6 @@ export default function ChatArea({
     }
   };
 
-  const handleFileSend = async (file: File) => {
-    try {
-      const data = await uploadFile(file);
-
-      socket.emit("private_message", {
-        toUserId: selectedUserId,
-        text: "",
-        fileUrl: data.url,
-        fileName: data.name,
-        fileType: data.type,
-        fileSize: data.size,
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const headerName =
     chatType === "private" ? selectedUser : selectedGroup?.groupInfo?.name;
 
@@ -226,6 +226,8 @@ export default function ChatArea({
                   background:
                     chatType === "private" && selectedUserObj?.profilePic
                       ? `url(${selectedUserObj.profilePic}) center/cover`
+                      : chatType === "group" && selectedGroup?.groupInfo?.avatar
+                      ? `url(${selectedGroup.groupInfo.avatar}) center/cover`
                       : "var(--color-accent-light)",
                   display: "flex",
                   alignItems: "center",
@@ -233,8 +235,10 @@ export default function ChatArea({
                   overflow: "hidden",
                 }}
               >
-                {!(chatType === "private" && selectedUserObj?.profilePic) &&
-                  headerInitials}
+                {!(
+                  (chatType === "private" && selectedUserObj?.profilePic) ||
+                  (chatType === "group" && selectedGroup?.groupInfo?.avatar)
+                ) && headerInitials}
               </div>
               <div>
                 <div className="chat-header-name">{headerName}</div>
@@ -338,23 +342,34 @@ export default function ChatArea({
                       <>
                         <div className={`msg ${isOwn ? "own" : ""}`}>
                           {m.fileUrl ? (
-                            m.fileType?.startsWith("image") ? (
-                              <img src={m.fileUrl} className="chat-image" />
-                            ) : m.fileType?.startsWith("video") ? (
-                              <video
-                                controls
-                                src={m.fileUrl}
-                                className="chat-video"
-                              />
-                            ) : (
-                              <a
-                                href={m.fileUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                📄 {m.fileName || "Download File"}
-                              </a>
-                            )
+                            <>
+                              {m.fileType?.startsWith("image") ? (
+                                <img
+                                  src={m.fileUrl}
+                                  className="chat-image"
+                                  alt="chat image"
+                                />
+                              ) : m.fileType?.startsWith("video") ? (
+                                <video
+                                  controls
+                                  src={m.fileUrl}
+                                  className="chat-video"
+                                />
+                              ) : (
+                                <a
+                                  href={m.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="file-link"
+                                >
+                                  <i className="fa-solid fa-file"></i>
+                                  Download File
+                                </a>
+                              )}
+                              {m.text && (
+                                <div style={{ marginTop: "8px" }}>{m.text}</div>
+                              )}
+                            </>
                           ) : (
                             <>
                               {m.text}
@@ -366,15 +381,27 @@ export default function ChatArea({
                         </div>
                         {isOwn && m._id && (
                           <div className="msg-actions">
-                            <button onClick={() => handleEdit(m)} title="Edit">
-                              <i
-                                className="fa-solid fa-pen-to-square"
-                                style={{
-                                  color: "rgb(122, 140, 231)",
-                                  fontSize: "13px",
-                                }}
-                              ></i>
-                            </button>
+                            {(() => {
+                              const otherStatuses = m.status?.filter(
+                                (s: any) => String(s.userId) !== String(userId)
+                              );
+                              const isSeen = otherStatuses?.some((s: any) => s.seen);
+                              
+                              if (!isSeen) {
+                                return (
+                                  <button onClick={() => handleEdit(m)} title="Edit">
+                                    <i
+                                      className="fa-solid fa-pen-to-square"
+                                      style={{
+                                        color: "rgb(122, 140, 231)",
+                                        fontSize: "13px",
+                                      }}
+                                    ></i>
+                                  </button>
+                                );
+                              }
+                              return null;
+                            })()}
                             <button
                               onClick={() => handleDelete(m._id!)}
                               title="Delete"
@@ -447,38 +474,42 @@ export default function ChatArea({
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Selected file preview */}
+          {selectedFile && (
+            <div style={{ padding: "8px 16px", display: "flex", alignItems: "center", gap: "12px", borderTop: "1px solid var(--color-border)" }}>
+              <i className="fa-solid fa-file" style={{ color: "var(--color-accent)" }}></i>
+              <span style={{ flex: 1, fontSize: "14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {selectedFile.name}
+              </span>
+              <button
+                onClick={onClearSelectedFile}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-faint)" }}
+                title="Remove file"
+              >
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+          )}
+
           {/* Input */}
           <div className="chat-input">
-            <div
-              className="file-uploder"
-              onClick={() => {
-                if (box == true) setBox(false);
-                else setBox(true);
-              }}
-            >
-              <i
-                className="fa-solid fa-plus"
-                style={{ color: "rgb(255, 255, 255)" }}
-              ></i>
-              {box && (
-                <div className="box">
-                  <input
-                    type="file"
-                    style={{ display: "none" }}
-                    id="fileInput"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        handleFileSend(e.target.files[0]);
-                      }
-                    }}
-                  />
-
-                  <label htmlFor="fileInput">
-                    <i className="fa-solid fa-file"></i>
-                    
-                  </label>
-                </div>
-              )}
+            <div className="file-uploader">
+              <input
+                type="file"
+                style={{ display: "none" }}
+                id="fileInput"
+                accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                multiple={false}
+                onChange={(e) => {
+                  if (e.target.files?.[0] && onFileSelect) {
+                    onFileSelect(e.target.files[0]);
+                    e.target.value = "";
+                  }
+                }}
+              />
+              <label htmlFor="fileInput" className="file-upload-btn" title="Attach file">
+                <i className="fa-solid fa-paperclip"></i>
+              </label>
             </div>
             <input
               value={text}
@@ -521,7 +552,9 @@ export default function ChatArea({
           selectedUser={selectedUser}
           selectedUserObj={selectedUserObj}
           selectedGroup={selectedGroup}
+          currentUserId={userId}
           onClose={() => setShowInfoModal(false)}
+          onGroupUpdated={onGroupUpdated}
         />
       )}
     </div>
