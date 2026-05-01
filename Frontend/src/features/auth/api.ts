@@ -16,16 +16,11 @@ export const uploadProfilePic = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("image", file);
 
-  const res = await api("/api/users/upload-profile", {
+  const data = await api("/api/users/upload-profile", {
     method: "POST",
     body: formData,
   });
 
-  if (!res.ok) {
-    throw new Error("Failed to upload profile picture");
-  }
-
-  const data = await res.json();
   return data.profilePic;
 };
   
@@ -34,14 +29,8 @@ export const uploadFile = async (file: File) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await api("/api/users/upload-file", {
+  return api("/api/users/upload-file", {
     method: "POST",
     body: formData,
   });
-
-  if (!res.ok) {
-    throw new Error("Failed to upload file");
-  }
-
-  return res.json();
 };
