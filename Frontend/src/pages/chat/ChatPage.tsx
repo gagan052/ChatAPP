@@ -59,7 +59,7 @@ export default function ChatPage() {
   const { logout } = useAuth();
   const { onlineUsers } = useUsers(username);
   const { messages: privateMessages } = useChat(userId, selectedUserId);
-  const { groups, reloadGroups } = useGroups(userId);
+  const { groups, setGroups, reloadGroups } = useGroups(userId);
   const { messages: groupMessages } = useGroupChat(
     userId,
     selectedGroup?._id ?? null

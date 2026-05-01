@@ -10,7 +10,6 @@ import {
 import { toast } from "react-toastify";
 import "./ChatArea.css";
 import { socket } from "../../services/socket";
-import { uploadChatFile } from "../../features/chat/api";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -46,12 +45,6 @@ interface ChatUser {
   username: string;
   lastSeen?: string;
   profilePic?: string;
-}
-
-interface Group {
-  _id: string;
-  groupInfo?: { name: string };
-  participants?: any[];
 }
 
 interface Group {
