@@ -37,7 +37,7 @@ router.get("/search", async (req: any, res: any) => {
       username: { $regex: q, $options: "i" },
     }).select("_id username profilePic");
 
-    const results = [];
+    const results: any[] = [];
 
     for (const user of users) {
       if (String(user._id) === String(currentUserId)) continue;
@@ -90,17 +90,39 @@ router.post(
   protect,
   upload.single("image"),
   async (req: any, res) => {
-    const user: any = await User.findById(req.user.id);
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image file uploaded" });
+      }
 
-    if (user.profilePic) {
-      const publicId = user.profilePic.split("/").pop().split(".")[0];
-      await cloudinary.uploader.destroy(`chat-app/${publicId}`);
+      const user: any = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (user.profilePic) {
+        const publicId = user.profilePic
+          .split("/")
+          .pop()
+          ?.split(".")
+          .slice(0, -1)
+          .join(".");
+
+        if (publicId) {
+          await cloudinary.uploader.destroy(`chat-app/${publicId}`);
+        }
+      }
+
+      user.profilePic = req.file.path; // cloudinary URL
+      await user.save();
+
+      return res.json({ profilePic: user.profilePic });
+    } catch (err: any) {
+      console.error("UPLOAD PROFILE ERROR:", err);
+      return res
+        .status(500)
+        .json({ message: err?.message || "Failed to upload profile picture" });
     }
-
-    user.profilePic = req.file.path; // cloudinary URL
-    await user.save();
-
-    res.json({ profilePic: user.profilePic });
   }
 );
 

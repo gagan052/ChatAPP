@@ -43,4 +43,12 @@ app.use("/api/groups", protect,groupRoutes);
 app.use("/api/users", protect, userRoutes);
 app.use("/api/conversations",protect, conversationRoute);
 
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error("UNHANDLED API ERROR:", err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  return res.status(500).json({ message: err?.message || "Server error" });
+});
+
 export default app;
