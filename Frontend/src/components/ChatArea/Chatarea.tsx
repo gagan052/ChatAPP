@@ -49,8 +49,8 @@ interface ChatUser {
 
 interface Group {
   _id: string;
-  groupInfo?: { 
-    name: string; 
+  groupInfo?: {
+    name: string;
     admin?: { _id: string; username: string; profilePic?: string };
     avatar?: string;
   };
@@ -128,12 +128,59 @@ export default function ChatArea({
     setEditText("");
   };
 
+
+
   const handleDelete = (messageId: string) => {
-    if (!window.confirm("Delete this message?")) return;
-    deleteMessageSocket(
-      messageId,
-      chatType === "private" ? selectedUserId || undefined : undefined,
-      chatType === "group"
+    toast(
+      ({ closeToast }) => (
+        <div>
+          <p>Delete this message?</p>
+          <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+            <button
+              onClick={() => {
+                deleteMessageSocket(
+                  messageId,
+                  chatType === "private"
+                    ? selectedUserId || undefined
+                    : undefined,
+                  chatType === "group"
+                );
+                closeToast();
+              }}
+              style={{
+                background: "red",
+                color: "white",
+                padding: "5px 10px",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              Yes
+            </button>
+
+            <button
+              onClick={closeToast}
+              style={{
+                background: "gray",
+                color: "white",
+                padding: "5px 10px",
+                border: "none",
+                borderRadius: "5px",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        position: "top-center",
+        autoClose: false, 
+        closeOnClick: false,
+        draggable: false,
+      }
     );
   };
 
@@ -378,11 +425,16 @@ export default function ChatArea({
                               const otherStatuses = m.status?.filter(
                                 (s: any) => String(s.userId) !== String(userId)
                               );
-                              const isSeen = otherStatuses?.some((s: any) => s.seen);
-                              
+                              const isSeen = otherStatuses?.some(
+                                (s: any) => s.seen
+                              );
+
                               if (!isSeen) {
                                 return (
-                                  <button onClick={() => handleEdit(m)} title="Edit">
+                                  <button
+                                    onClick={() => handleEdit(m)}
+                                    title="Edit"
+                                  >
                                     <i
                                       className="fa-solid fa-pen-to-square"
                                       style={{
@@ -469,14 +521,38 @@ export default function ChatArea({
 
           {/* Selected file preview */}
           {selectedFile && (
-            <div style={{ padding: "8px 16px", display: "flex", alignItems: "center", gap: "12px", borderTop: "1px solid var(--color-border)" }}>
-              <i className="fa-solid fa-file" style={{ color: "var(--color-accent)" }}></i>
-              <span style={{ flex: 1, fontSize: "14px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div
+              style={{
+                padding: "8px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                borderTop: "1px solid var(--color-border)",
+              }}
+            >
+              <i
+                className="fa-solid fa-file"
+                style={{ color: "var(--color-accent)" }}
+              ></i>
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: "14px",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
                 {selectedFile.name}
               </span>
               <button
                 onClick={onClearSelectedFile}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-text-faint)" }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--color-text-faint)",
+                }}
                 title="Remove file"
               >
                 <i className="fa-solid fa-times"></i>
@@ -500,7 +576,11 @@ export default function ChatArea({
                   }
                 }}
               />
-              <label htmlFor="fileInput" className="file-upload-btn" title="Attach file">
+              <label
+                htmlFor="fileInput"
+                className="file-upload-btn"
+                title="Attach file"
+              >
                 <i className="fa-solid fa-paperclip"></i>
               </label>
             </div>
