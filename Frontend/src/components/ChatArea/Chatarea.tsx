@@ -356,7 +356,7 @@ export default function ChatArea({
                                   className="file-link"
                                 >
                                   <i className="fa-solid fa-file"></i>
-                                  Download File
+                                  Open File
                                 </a>
                               )}
                               {m.text && (

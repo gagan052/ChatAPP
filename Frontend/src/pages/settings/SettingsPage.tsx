@@ -82,8 +82,7 @@ export default function SettingsPage() {
           </div>
 
           <div className="user-info">
-            <p><strong>Username:</strong> {currentUser?.username}</p>
-            {/* <p><strong>Email:</strong> {currentUser?.email}</p> */}
+            <p><strong>Username:</strong> {currentUser?.username}</p> 
           </div>
 
           <button 

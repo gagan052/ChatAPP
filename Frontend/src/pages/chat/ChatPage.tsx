@@ -370,6 +370,9 @@ useEffect(() => {
       if (chatType === "private" && selectedUserId) {
         if (selectedFile) {
           const data = await uploadChatFile(selectedFile);
+          
+          console.log(data);
+
           sendMessage(selectedUserId, text.trim(), { fileUrl: data.fileUrl, fileType: data.fileType });
         } else {
           sendMessage(selectedUserId, text.trim());

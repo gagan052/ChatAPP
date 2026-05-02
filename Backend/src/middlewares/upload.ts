@@ -4,9 +4,15 @@ import cloudinary from "../config/cloudinary";
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: "chat-app",
-    resource_type: "auto", // images + files
+  params: async (req, file) => {
+    const isPDF = file.mimetype === "application/pdf";
+
+    return {
+      folder: "chat-app",
+      resource_type: "raw", 
+      format: isPDF ? "pdf" : undefined,
+      access_mode: "public",
+    };
   },
 });
 

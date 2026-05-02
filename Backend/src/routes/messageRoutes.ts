@@ -12,9 +12,13 @@ router.delete("/clear/:chatId", protect, clearChat);
 
 router.post("/upload", protect, upload.single("file"), async (req: any, res) => {
   try {
+    
+    console.log("hello")
+
     res.json({
       fileUrl: req.file.path,
       fileType: req.file.mimetype,
+      
     });
   } catch (err) {
     console.error(err);
