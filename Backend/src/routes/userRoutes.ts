@@ -8,14 +8,33 @@ import cloudinary from "../config/cloudinary";
 
 const router = express.Router();
 
+function uploadErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message;
+  const e = err as Record<string, unknown> | null | undefined;
+  const nested =
+    e?.error &&
+    typeof e.error === "object" &&
+    e.error !== null &&
+    "message" in e.error
+      ? String((e.error as { message?: string }).message)
+      : "";
+  if (nested) return nested;
+  if (typeof e?.message === "string" && e.message) return e.message;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
+
 const handleSingleUpload =
   (fieldName: string) => (req: any, res: any, next: any) => {
     upload.single(fieldName)(req, res, (err: any) => {
       if (err) {
         console.error("UPLOAD MIDDLEWARE ERROR:", err);
-        return res
-          .status(500)
-          .json({ message: err?.message || "File upload failed" });
+        return res.status(500).json({
+          message: uploadErrorMessage(err) || "File upload failed",
+        });
       }
       return next();
     });
