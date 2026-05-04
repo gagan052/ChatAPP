@@ -23,7 +23,6 @@ import {
   onInvitationReceived,
   offInvitationReceived,
 } from "../../features/invitation/socket";
-import UploadProgress from "../../components/UploadProgress/UploadProgress";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -334,7 +333,7 @@ export default function ChatPage() {
 
   const handleGroupDeletedFromModal = useCallback((groupId: string) => {
     setGroups((prev) => prev.filter((g) => String(g._id) !== String(groupId)));
-    setSelectedGroup((sg) =>
+    setSelectedGroup((sg:any) =>
       sg && String(sg._id) === String(groupId) ? null : sg
     );
   }, []);
@@ -345,7 +344,7 @@ export default function ChatPage() {
       setGroups((prev) =>
         prev.map((g) => (String(g._id) === String(group._id) ? group : g))
       );
-      setSelectedGroup((sg) =>
+      setSelectedGroup((sg:any) =>
         sg && String(sg._id) === String(group._id) ? group : sg
       );
     };
