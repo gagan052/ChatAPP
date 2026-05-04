@@ -3,7 +3,7 @@ import axios from "axios";
 
 export const uploadChatFile = async (
   file: File,
-  onProgress: (progress: number) => void
+  onProgress?: (progress: number) => void
 ) => {
   const formData = new FormData();
   formData.append("file", file);

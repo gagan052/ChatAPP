@@ -99,7 +99,7 @@ export default function ChatInfoModal({
     try {
       setLoading(true);
       console.log("Uploading group avatar file");
-      const uploadResponse = await uploadChatFile(file);
+      const uploadResponse = await uploadChatFile(file );
       console.log("Uploaded avatar:", uploadResponse);
       const imageUrl = uploadResponse?.fileUrl;
       if (!imageUrl) {
