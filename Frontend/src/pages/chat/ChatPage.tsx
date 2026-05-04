@@ -2,7 +2,11 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { connectSocket } from "../../services/socket";
 import { useChat } from "../../features/chat/hooks";
-import { useGroupChat, useGroups } from "../../features/groups/hooks";
+import {
+  deleteGroupApi,
+  useGroupChat,
+  useGroups,
+} from "../../features/groups/hooks";
 import { sendMessage, sendGroupMessage } from "../../features/chat/socket";
 import { uploadChatFile } from "../../features/chat/api";
 import { useUsers } from "../../features/users/hooks";
@@ -23,6 +27,7 @@ import {
   onInvitationReceived,
   offInvitationReceived,
 } from "../../features/invitation/socket";
+import { getPinnedChats, togglePinChat } from "../../features/utils/pinChats";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -46,19 +51,22 @@ export default function ChatPage() {
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [chatUsers, setChatUsers] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
-
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(280);
-
-  const isResizing = useRef(false);
   const [text, setText] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [search, setSearch] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [uploadingFile, setUploadingFile] = useState<{
     name: string;
     progress: number;
   } | null>(null);
+  const [pinnedChats, setPinnedChats] = useState<string[]>([]);
+
+  const isResizing = useRef(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const { logout } = useAuth();
   const { onlineUsers } = useUsers(username);
@@ -68,6 +76,19 @@ export default function ChatPage() {
     userId,
     selectedGroup?._id ?? null
   );
+
+  const selectedUserObj = chatUsers.find((u) => u.id === selectedUserId);
+
+  const sortedChats = [...chatUsers].sort((a, b) => {
+    const aIndex = pinnedChats.indexOf(a.chatId);
+    const bIndex = pinnedChats.indexOf(b.chatId);
+
+    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+    if (aIndex !== -1) return -1;
+    if (bIndex !== -1) return 1;
+
+    return 0;
+  });
 
   const messages = chatType === "private" ? privateMessages : groupMessages;
 
@@ -106,6 +127,10 @@ export default function ChatPage() {
   }, [userId]);
 
   useEffect(() => {
+    setPinnedChats(getPinnedChats());
+  }, []);
+
+  useEffect(() => {
     loadChats();
   }, [loadChats]);
 
@@ -116,6 +141,23 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      menuRef.current &&
+      !menuRef.current.contains(event.target as Node)
+    ) {
+      setActiveMenu(null);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
 
   useEffect(() => {
     const handler = ({ conversation }: any) => {
@@ -322,6 +364,25 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
+    const handler = ({ chatId }: { chatId: string }) => {
+      //  remove deleted chat from sidebar
+      setChatUsers((prev) => prev.filter((c) => c.chatId !== chatId));
+
+      //  if user is currently inside that chat → exit it
+      if (selectedUserObj?.chatId === chatId) {
+        setSelectedUser(null);
+        setSelectedUserId(null);
+      }
+    };
+
+    socket.on("chat:deleted", handler);
+
+    return () => {
+      socket.off("chat:deleted", handler);
+    };
+  }, [selectedUserObj]);
+
+  useEffect(() => {
     window.addEventListener("mousemove", resize);
     window.addEventListener("mouseup", stopResizing);
 
@@ -333,7 +394,7 @@ export default function ChatPage() {
 
   const handleGroupDeletedFromModal = useCallback((groupId: string) => {
     setGroups((prev) => prev.filter((g) => String(g._id) !== String(groupId)));
-    setSelectedGroup((sg:any) =>
+    setSelectedGroup((sg: any) =>
       sg && String(sg._id) === String(groupId) ? null : sg
     );
   }, []);
@@ -344,7 +405,7 @@ export default function ChatPage() {
       setGroups((prev) =>
         prev.map((g) => (String(g._id) === String(group._id) ? group : g))
       );
-      setSelectedGroup((sg:any) =>
+      setSelectedGroup((sg: any) =>
         sg && String(sg._id) === String(group._id) ? group : sg
       );
     };
@@ -416,7 +477,7 @@ export default function ChatPage() {
     try {
       let fileData = null;
 
-      // 🔥 HANDLE FILE UPLOAD WITH PROGRESS
+      //  HANDLE FILE UPLOAD WITH PROGRESS
       if (selectedFile) {
         setUploadingFile({
           name: selectedFile.name,
@@ -430,7 +491,7 @@ export default function ChatPage() {
         setUploadingFile(null);
       }
 
-      // 🔥 PRIVATE CHAT
+      //  PRIVATE CHAT
       if (chatType === "private" && selectedUserId) {
         if (fileData) {
           sendMessage(selectedUserId, text.trim(), {
@@ -444,7 +505,7 @@ export default function ChatPage() {
         }
       }
 
-      // 🔥 GROUP CHAT
+      //  GROUP CHAT
       else if (chatType === "group" && selectedGroup) {
         if (fileData) {
           sendGroupMessage(selectedGroup._id, text.trim(), {
@@ -490,8 +551,6 @@ export default function ChatPage() {
     selectGroupChat(group);
   };
 
-  const selectedUserObj = chatUsers.find((u) => u.id === selectedUserId);
-
   const goHome = useCallback(() => {
     setActiveTab("chats");
     setSearch("");
@@ -520,6 +579,91 @@ export default function ChatPage() {
     sendInvitation(userId);
 
     goHome();
+  };
+
+  const toggleMenu = (id: string) => {
+    setActiveMenu((prev) => (prev === id ? null : id));
+  };
+
+  
+  const handlePinChat = (chatId: string) => {
+    const updated = togglePinChat(chatId);
+    setPinnedChats(updated);
+    setActiveMenu(null);
+  };
+
+  const handleDeleteChat = async (chatId: string) => {
+    toast.info(
+      ({ closeToast }) => (
+        <div>
+          <p>Delete this chat?</p>
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <button onClick={closeToast}>Cancel</button>
+            <button
+              onClick={async () => {
+                closeToast();
+                try {
+                  await api(`/api/conversations/${chatId}`, {
+                    method: "DELETE",
+                  });
+
+                  setChatUsers((prev) =>
+                    prev.filter((c) => c.chatId !== chatId)
+                  );
+
+                  if (selectedUserObj?.chatId === chatId) {
+                    setSelectedUser(null);
+                    setSelectedUserId(null);
+                  }
+
+                  toast.success("Chat deleted");
+                } catch (err) {
+                  toast.error("Failed to delete chat");
+                }
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+      }
+    );
+  };
+
+  const handleDeleteGroupLocal = (groupId: string) => {
+    toast.info(
+      ({ closeToast }) => (
+        <div>
+          <p>Delete this group?</p>
+          <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+            <button onClick={closeToast}>Cancel</button>
+            <button
+              onClick={async () => {
+                closeToast();
+                try {
+                  await deleteGroupApi(groupId);
+
+                  setGroups((prev) => prev.filter((g) => g._id !== groupId));
+
+                  toast.success("Group deleted");
+                } catch (err) {
+                  toast.error("Failed to delete group");
+                }
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      { autoClose: false }
+    );
   };
 
   return (
@@ -644,7 +788,7 @@ export default function ChatPage() {
             />
           ) : (
             <>
-              {chatUsers.map((u: any) => {
+              {sortedChats.map((u: any) => {
                 const isActive =
                   chatType === "private" && selectedUserId === u.id;
 
@@ -682,25 +826,83 @@ export default function ChatPage() {
                         }}
                       >
                         <div className="user-name">{u.username}</div>
-                        {unreadCounts[u.id] > 0 && (
+
+                        {
                           <div
-                            className="unread-badge"
                             style={{
-                              backgroundColor: "var(--color-accent)",
-                              color: "white",
-                              borderRadius: "50%",
-                              width: "20px",
-                              height: "20px",
                               display: "flex",
                               alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "10px",
-                              fontWeight: "bold",
+                              gap: "10px",
+                              position: "relative",
                             }}
                           >
-                            {unreadCounts[u.id]}
+                            {unreadCounts[u.id] > 0 && (
+                              <div
+                                className="unread-badge"
+                                style={{
+                                  backgroundColor: "var(--color-accent)",
+                                  color: "white",
+                                  borderRadius: "50%",
+                                  width: "20px",
+                                  height: "20px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "10px",
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                {unreadCounts[u.id]}
+                              </div>
+                            )}
+
+                            {
+                              <div
+                              ref={menuRef}
+                                className="chat-menu"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleMenu(u.id);
+                                }}
+                                style={{ border: "none", cursor: "pointer" }}
+                              >
+                                {pinnedChats.includes(u.chatId) && (
+                                  <i
+                                    className="fa-solid fa-thumbtack"
+                                    style={{ marginLeft: 6, fontSize: "12px" }}
+                                  ></i>
+                                )}
+
+                                <i className="fa-solid fa-ellipsis-vertical"></i>
+
+                                {activeMenu === u.id && (
+                                  <div
+                                    className="menu-dropdown"
+                                    style={{
+                                      position: "absolute",
+                                      right: 0,
+                                      top: "100%",
+                                      backgroundColor: "var(--color-surface)",
+                                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                      borderRadius: "4px",
+                                      zIndex: 100,
+                                      padding: "8px 8px",
+                                    }}
+                                  >
+                                    <div onClick={() => handlePinChat(u.chatId)}>
+                                      {pinnedChats.includes(u.chatId) ? "Unpin" : "Pin"}
+                                    </div>
+                                    <div
+                                      onClick={() => handleDeleteChat(u.chatId)}
+                                    >
+                                      Delete
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            }
                           </div>
-                        )}
+                        }
                       </div>
                       <div
                         style={{
@@ -813,6 +1015,47 @@ export default function ChatPage() {
                             </span>
                           </div>
                         </div>
+                        {
+                          <div
+                            className="group-menu"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleMenu(g._id);
+                            }}
+                            style={{
+                              border: "none",
+                              cursor: "pointer",
+                              position: "relative",
+                            }}
+                          >
+                            <i className="fa-solid fa-ellipsis-vertical"></i>
+
+                            {activeMenu === g._id && (
+                              <div
+                                className="menu-dropdown"
+                                style={{
+                                  position: "absolute",
+                                  right: 0,
+                                  top: "100%",
+                                  backgroundColor: "var(--color-surface)",
+                                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                  borderRadius: "4px",
+                                  zIndex: 100,
+                                  padding: "8px 8px",
+                                }}
+                              >
+                                <div onClick={() => handlePinChat(g._id)}>
+                                  {pinnedChats.includes(g._id) ? "Unpin" : "Pin"}
+                                </div>
+                                <div
+                                  onClick={() => handleDeleteGroupLocal(g._id)}
+                                >
+                                  Delete
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        }
                       </div>
                     );
                   })}
@@ -862,8 +1105,6 @@ export default function ChatPage() {
           onCreated={handleGroupCreated}
         />
       )}
-
-      
     </div>
   );
 }

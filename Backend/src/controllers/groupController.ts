@@ -277,3 +277,34 @@ export const deleteGroup = async (req: any, res: any) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+// DELETE /api/groups/:groupId/leave
+export const leaveGroup = async (req: any, res: any) => {
+  try {
+    const { groupId } = req.params;
+    const userId = req.user.id;
+
+    const group = await Conversation.findById(groupId);
+
+    if (!group || group.type !== "group") {
+      return res.status(404).json({ success: false, message: "Group not found" });
+    }
+
+    // ❌ Admin cannot leave (optional rule)
+    if (String(group.groupInfo?.admin) === userId) {
+      return res.status(400).json({ message: "Admin cannot leave group" });
+    }
+
+    group.participants = group.participants.filter(
+      (p: any) => String(p) !== userId
+    );
+
+    await group.save();
+
+    res.json({ success: true, groupId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to leave group" });
+  }
+};

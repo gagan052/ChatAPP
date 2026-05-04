@@ -28,6 +28,12 @@ export const deleteGroupApi = async (groupId: string) => {
   });
 };
 
+export const leaveGroupApi = async (groupId: string) => {
+  return api(`/api/groups/${groupId}/leave`, {
+    method: "DELETE",
+  });
+};
+
 export const removeMemberFromGroupApi = async (groupId: string, memberId: string) => {
   return api(`/api/groups/${groupId}/members/${memberId}`, {
     method: "DELETE",

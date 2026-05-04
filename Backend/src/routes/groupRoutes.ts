@@ -6,6 +6,7 @@ import {
   updateGroup,
   deleteGroup,
   removeMemberFromGroup,
+  leaveGroup,
 } from "../controllers/groupController";
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.delete("/:groupId/members/:memberId", removeMemberFromGroup);
 router.delete("/:groupId", deleteGroup);
 router.get("/:groupId/messages", getGroupMessages);
 router.put("/:groupId/update", updateGroup);
+router.delete("/:groupId/leave", leaveGroup);
 
 export default router;

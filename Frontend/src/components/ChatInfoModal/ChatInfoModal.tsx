@@ -4,6 +4,7 @@ import {
   updateGroupApi,
   deleteGroupApi,
   removeMemberFromGroupApi,
+  leaveGroupApi,
 } from "../../features/groups/hooks";
 import { uploadChatFile } from "../../features/chat/api";
 import { toast } from "react-toastify";
@@ -22,9 +23,7 @@ interface Group {
   _id: string;
   groupInfo?: {
     name: string;
-    admin?:
-      | { _id: string; username: string; profilePic?: string }
-      | string;
+    admin?: { _id: string; username: string; profilePic?: string } | string;
     avatar?: string;
   };
   participants?: User[];
@@ -65,9 +64,8 @@ export default function ChatInfoModal({
   const initials = name?.slice(0, 2).toUpperCase() || "?";
 
   const adminId = getGroupAdminId(selectedGroup ?? null);
-  const isAdmin =
-    chatType === "group" && adminId === String(currentUserId);
-  
+  const isAdmin = chatType === "group" && adminId === String(currentUserId);
+
   const [isEditingName, setIsEditingName] = useState(false);
   const [newGroupName, setNewGroupName] = useState(name || "");
   const [loading, setLoading] = useState(false);
@@ -78,7 +76,9 @@ export default function ChatInfoModal({
     try {
       setLoading(true);
       console.log("Updating group name:", newGroupName.trim());
-      const response = await updateGroupApi(selectedGroup._id, { name: newGroupName.trim() });
+      const response = await updateGroupApi(selectedGroup._id, {
+        name: newGroupName.trim(),
+      });
       console.log("Group name update response:", response);
       if (response.success && onGroupUpdated) {
         onGroupUpdated(response.group);
@@ -99,7 +99,7 @@ export default function ChatInfoModal({
     try {
       setLoading(true);
       console.log("Uploading group avatar file");
-      const uploadResponse = await uploadChatFile(file );
+      const uploadResponse = await uploadChatFile(file);
       console.log("Uploaded avatar:", uploadResponse);
       const imageUrl = uploadResponse?.fileUrl;
       if (!imageUrl) {
@@ -120,6 +120,80 @@ export default function ChatInfoModal({
     } finally {
       setLoading(false);
     }
+  };
+
+  const confirmLeaveGroup = (onConfirm: () => void) => {
+    toast.info(
+      ({ closeToast }) => (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <span>Are you sure you want to leave this group?</span>
+
+          <div
+            style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}
+          >
+            <button
+              onClick={() => {
+                closeToast();
+              }}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "6px",
+                border: "1px solid #ccc",
+                background: "#eee",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={() => {
+                closeToast();
+                onConfirm();
+              }}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "6px",
+                border: "none",
+                background: "#e67e22",
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              Leave
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        closeButton: false,
+      }
+    );
+  };
+
+  const handleLeaveGroup = async () => {
+    if (!selectedGroup?._id) return;
+
+    confirmLeaveGroup(async () => {
+      try {
+        setLoading(true);
+
+        await leaveGroupApi(selectedGroup._id);
+
+        toast.success("You left the group");
+
+        onGroupDeleted?.(selectedGroup._id);
+        onClose();
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to leave group");
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   const handleRemoveMember = async (memberId: string) => {
@@ -178,8 +252,14 @@ export default function ChatInfoModal({
           </button>
         </div>
 
-        <div className="modal-body" style={{ padding: "20px", textAlign: "center" }}>
-          <div className="chat-header-avatar-wrapper" style={{ position: "relative" }}>
+        <div
+          className="modal-body"
+          style={{ padding: "20px", textAlign: "center" }}
+        >
+          <div
+            className="chat-header-avatar-wrapper"
+            style={{ position: "relative" }}
+          >
             <div
               className={`chat-header-avatar ${
                 chatType === "group" ? "group-avatar" : ""
@@ -189,16 +269,16 @@ export default function ChatInfoModal({
                 height: "80px",
                 fontSize: "32px",
                 margin: "0 auto 16px",
-                background: 
-                  (chatType === "private" && selectedUserObj?.profilePic) 
-                    ? `url(${selectedUserObj.profilePic}) center/cover` 
-                    : (chatType === "group" && selectedGroup?.groupInfo?.avatar)
+                background:
+                  chatType === "private" && selectedUserObj?.profilePic
+                    ? `url(${selectedUserObj.profilePic}) center/cover`
+                    : chatType === "group" && selectedGroup?.groupInfo?.avatar
                     ? `url(${selectedGroup.groupInfo.avatar}) center/cover`
                     : "var(--color-accent-light)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                overflow: "hidden"
+                overflow: "hidden",
               }}
             >
               {!(
@@ -222,7 +302,7 @@ export default function ChatInfoModal({
                   justifyContent: "center",
                   cursor: "pointer",
                   color: "white",
-                  fontSize: "12px"
+                  fontSize: "12px",
                 }}
                 title="Change group avatar"
               >
@@ -244,7 +324,14 @@ export default function ChatInfoModal({
           </div>
 
           {chatType === "group" && isEditingName ? (
-            <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "8px",
+                alignItems: "center",
+                marginBottom: "8px",
+              }}
+            >
               <input
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
@@ -261,7 +348,7 @@ export default function ChatInfoModal({
                   padding: "8px 12px",
                   border: "1px solid var(--color-border)",
                   borderRadius: "8px",
-                  fontSize: "16px"
+                  fontSize: "16px",
                 }}
               />
               <button
@@ -273,14 +360,22 @@ export default function ChatInfoModal({
                   borderRadius: "8px",
                   background: "var(--color-accent)",
                   color: "white",
-                  cursor: "pointer"
+                  cursor: "pointer",
                 }}
               >
                 Save
               </button>
             </div>
           ) : (
-            <h2 style={{ marginBottom: "8px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+            <h2
+              style={{
+                marginBottom: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+            >
               {name}
               {isAdmin && (
                 <button
@@ -292,7 +387,7 @@ export default function ChatInfoModal({
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "var(--color-text-faint)"
+                    color: "var(--color-text-faint)",
                   }}
                 >
                   <i className="fa-solid fa-pen"></i>
@@ -302,11 +397,13 @@ export default function ChatInfoModal({
           )}
 
           {chatType === "group" && selectedGroup?.groupInfo?.admin && (
-            <p style={{ 
-              color: "var(--color-text-faint)", 
-              fontSize: "12px", 
-              marginBottom: "16px"
-            }}>
+            <p
+              style={{
+                color: "var(--color-text-faint)",
+                fontSize: "12px",
+                marginBottom: "16px",
+              }}
+            >
               Admin:{" "}
               {typeof selectedGroup.groupInfo.admin === "object"
                 ? selectedGroup.groupInfo.admin.username
@@ -317,13 +414,25 @@ export default function ChatInfoModal({
           {chatType === "private" ? (
             <div style={{ textAlign: "left", marginTop: "20px" }}>
               <div style={{ marginBottom: "12px" }}>
-                <p style={{ color: "var(--color-text-faint)", fontSize: "12px", marginBottom: "4px" }}>
+                <p
+                  style={{
+                    color: "var(--color-text-faint)",
+                    fontSize: "12px",
+                    marginBottom: "4px",
+                  }}
+                >
                   Username
                 </p>
                 <p>{selectedUserObj?.username}</p>
               </div>
               <div style={{ marginBottom: "12px" }}>
-                <p style={{ color: "var(--color-text-faint)", fontSize: "12px", marginBottom: "4px" }}>
+                <p
+                  style={{
+                    color: "var(--color-text-faint)",
+                    fontSize: "12px",
+                    marginBottom: "4px",
+                  }}
+                >
                   Last Seen
                 </p>
                 <p>{formatLastSeen(selectedUserObj?.lastSeen)}</p>
@@ -331,66 +440,108 @@ export default function ChatInfoModal({
             </div>
           ) : (
             <div style={{ textAlign: "left", marginTop: "20px" }}>
-              <p style={{ color: "var(--color-text-faint)", fontSize: "12px", marginBottom: "12px" }}>
+              <p
+                style={{
+                  color: "var(--color-text-faint)",
+                  fontSize: "12px",
+                  marginBottom: "12px",
+                }}
+              >
                 {selectedGroup?.participants?.length} Members
               </p>
-              <div className="member-list" style={{ maxHeight: "200px", overflowY: "auto" }}>
+              <div
+                className="member-list"
+                style={{ maxHeight: "200px", overflowY: "auto" }}
+              >
                 {selectedGroup?.participants?.map((member) => {
                   const memberKey = member._id || member.id;
-                  const isMemberAdmin =
-                    adminId === String(memberKey);
+                  const isMemberAdmin = adminId === String(memberKey);
                   const canRemove =
                     isAdmin &&
                     !isMemberAdmin &&
                     String(memberKey) !== String(currentUserId);
 
                   return (
-                  <div
-                    key={memberKey}
-                    className="member-item"
-                    style={{ padding: "8px 0", borderBottom: "1px solid var(--color-surface-2)", display: "flex", alignItems: "center", gap: "10px", justifyContent: "space-between" }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0, flex: 1 }}>
-                    <div className="member-avatar" style={{
-                      width: "30px",
-                      height: "30px",
-                      borderRadius: "50%",
-                      background: member.profilePic ? `url(${member.profilePic}) center/cover` : "var(--color-accent-light)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "12px"
-                    }}>
-                      {!member.profilePic && member.username[0].toUpperCase()}
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                      <span className="member-name">{member.username}</span>
-                      {isMemberAdmin && (
-                        <span style={{ fontSize: "11px", color: "var(--color-accent)" }}>Admin</span>
-                      )}
-                    </div>
-                    </div>
-                    {canRemove && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveMember(String(memberKey))}
-                        disabled={loading}
-                        title="Remove from group"
+                    <div
+                      key={memberKey}
+                      className="member-item"
+                      style={{
+                        padding: "8px 0",
+                        borderBottom: "1px solid var(--color-surface-2)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div
                         style={{
-                          flexShrink: 0,
-                          padding: "6px 10px",
-                          fontSize: "12px",
-                          border: "1px solid var(--color-border)",
-                          borderRadius: "8px",
-                          background: "var(--color-surface-2)",
-                          cursor: loading ? "not-allowed" : "pointer",
-                          color: "var(--color-text)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          minWidth: 0,
+                          flex: 1,
                         }}
                       >
-                        Remove
-                      </button>
-                    )}
-                  </div>
+                        <div
+                          className="member-avatar"
+                          style={{
+                            width: "30px",
+                            height: "30px",
+                            borderRadius: "50%",
+                            background: member.profilePic
+                              ? `url(${member.profilePic}) center/cover`
+                              : "var(--color-accent-light)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "12px",
+                          }}
+                        >
+                          {!member.profilePic &&
+                            member.username[0].toUpperCase()}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            minWidth: 0,
+                          }}
+                        >
+                          <span className="member-name">{member.username}</span>
+                          {isMemberAdmin && (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                color: "var(--color-accent)",
+                              }}
+                            >
+                              Admin
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {canRemove && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMember(String(memberKey))}
+                          disabled={loading}
+                          title="Remove from group"
+                          style={{
+                            flexShrink: 0,
+                            padding: "6px 10px",
+                            fontSize: "12px",
+                            border: "1px solid var(--color-border)",
+                            borderRadius: "8px",
+                            background: "var(--color-surface-2)",
+                            cursor: loading ? "not-allowed" : "pointer",
+                            color: "var(--color-text)",
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -398,7 +549,30 @@ export default function ChatInfoModal({
           )}
         </div>
 
-        <div className="modal-footer" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div
+          className="modal-footer"
+          style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+        >
+          {chatType === "group" && !isAdmin && (
+            <button
+              type="button"
+              onClick={handleLeaveGroup}
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "8px",
+                border: "none",
+                background: "#e67e22",
+                color: "white",
+                cursor: loading ? "not-allowed" : "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Leave Group
+            </button>
+          )}
+
           {chatType === "group" && isAdmin && (
             <button
               type="button"
@@ -418,7 +592,11 @@ export default function ChatInfoModal({
               Delete group
             </button>
           )}
-          <button className="modal-cancel" onClick={onClose} style={{ width: "100%" }}>
+          <button
+            className="modal-cancel"
+            onClick={onClose}
+            style={{ width: "100%" }}
+          >
             Close
           </button>
         </div>

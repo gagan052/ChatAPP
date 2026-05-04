@@ -767,3 +767,23 @@
 
 
 
+.menu-dropdown {
+  position: absolute;
+  right: 10px;
+  top: 25px;
+  background: #2c2c2c;
+  border-radius: 8px;
+  padding: 6px;
+  min-width: 120px;
+  z-index: 1000;
+}
+
+.menu-dropdown div {
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.menu-dropdown div:hover {
+  background: #444;
+}
