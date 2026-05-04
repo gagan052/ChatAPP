@@ -1,3 +1,33 @@
+.chat-area{
+  position: relative;
+}
+
+.msg {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    padding-top: 4px;
+}
+
+.msg-wrap{
+  object-fit: cover;
+}
+
+.msg.own{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.chat-video{
+  height: 400px;
+}
+.chat-image{
+  height: 400px;
+}
+
 .msg-time{
     display: flex;
     align-items: center;
@@ -73,4 +103,45 @@
 
 .file-link:hover {
   background-color: rgba(0, 0, 0, 0.1);
+}
+
+.file-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgb(4, 4, 4);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  max-width: 250px;
+  transition: background 0.2s;
+}
+
+.file-card:hover {
+  background: rgb(31, 31, 31);
+}
+
+.file-icon {
+  font-size: 20px;
+  color: var(--color-accent);
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.file-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-meta {
+  font-size: 11px;
+  color: var(--color-text-faint);
 }

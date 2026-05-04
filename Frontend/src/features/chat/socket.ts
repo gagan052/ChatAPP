@@ -3,26 +3,30 @@ import { socket } from "../../services/socket";
 export const sendMessage = (
   toUserId: string,
   text: string,
-  options?: { fileUrl?: string; fileType?: string }
+  options?: { fileUrl?: string; fileType?: string; fileName?: string; fileSize?: number }
 ) => {
   socket.emit("private_message", {
     toUserId,
     text,
     fileUrl: options?.fileUrl,
     fileType: options?.fileType,
+    fileName: options?.fileName,  
+    fileSize: options?.fileSize,
   });
 };
 
 export const sendGroupMessage = (
   groupId: string,
   text: string,
-  options?: { fileUrl?: string; fileType?: string }
+  options?: { fileUrl?: string; fileType?: string; fileName?: string; fileSize?: number }
 ) => {
   socket.emit("group_message", {
     groupId,
     text,
     fileUrl: options?.fileUrl,
     fileType: options?.fileType,
+    fileName: options?.fileName,
+    fileSize: options?.fileSize,
   });
 };
 

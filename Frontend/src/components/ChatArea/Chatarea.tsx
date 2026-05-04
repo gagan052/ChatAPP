@@ -10,6 +10,7 @@ import {
 import { toast } from "react-toastify";
 import "./ChatArea.css";
 import { socket } from "../../services/socket";
+import UploadProgress from "../UploadProgress/UploadProgress";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -63,6 +64,7 @@ interface ChatAreaProps {
   selectedUserId: string | null;
   selectedGroup: Group | null;
   chatId: string | null;
+  uploadingFile?: { name: string; progress: number } | null;
   messages: Message[];
   text: string;
   onTextChange: (val: string) => void;
@@ -74,6 +76,7 @@ interface ChatAreaProps {
   onlineUsers: string[];
   selectedUserObj?: ChatUser;
   onGroupUpdated?: (updatedGroup: any) => void;
+  onGroupDeleted?: (groupId: string) => void;
 }
 
 export default function ChatArea({
@@ -85,6 +88,7 @@ export default function ChatArea({
   messages,
   text,
   onTextChange,
+  uploadingFile,
   onSend,
   onFileSelect,
   selectedFile,
@@ -93,6 +97,7 @@ export default function ChatArea({
   onlineUsers,
   selectedUserObj,
   onGroupUpdated,
+  onGroupDeleted,
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
@@ -127,8 +132,6 @@ export default function ChatArea({
     setEditingId(null);
     setEditText("");
   };
-
-
 
   const handleDelete = (messageId: string) => {
     toast(
@@ -177,7 +180,7 @@ export default function ChatArea({
       ),
       {
         position: "top-center",
-        autoClose: false, 
+        autoClose: false,
         closeOnClick: false,
         draggable: false,
       }
@@ -263,16 +266,19 @@ export default function ChatArea({
                   chatType === "group" ? "group-avatar" : ""
                 }`}
                 style={{
-                  background:
+                  width: "45px",
+                  height: "45px",
+                  borderRadius: "50%",
+                  backgroundImage:
                     chatType === "private" && selectedUserObj?.profilePic
-                      ? `url(${selectedUserObj.profilePic}) center/cover`
+                      ? `url(${selectedUserObj.profilePic})`
                       : chatType === "group" && selectedGroup?.groupInfo?.avatar
-                      ? `url(${selectedGroup.groupInfo.avatar}) center/cover`
-                      : "var(--color-accent-light)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  overflow: "hidden",
+                      ? `url(${selectedGroup.groupInfo.avatar})`
+                      : undefined,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  backgroundRepeat: "no-repeat",
+                  backgroundColor: "var(--color-accent-light)",
                 }}
               >
                 {!(
@@ -384,26 +390,52 @@ export default function ChatArea({
                           {m.fileUrl ? (
                             <>
                               {m.fileType?.startsWith("image") ? (
-                                <img
-                                  src={m.fileUrl}
-                                  className="chat-image"
-                                  alt="chat image"
-                                />
+                                <a
+                                  href={m.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <img
+                                    src={m.fileUrl}
+                                    className="chat-image"
+                                    alt="chat image"
+                                  />
+                                </a>
                               ) : m.fileType?.startsWith("video") ? (
-                                <video
-                                  controls
-                                  src={m.fileUrl}
-                                  className="chat-video"
-                                />
+                                <a
+                                  href={m.fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <video
+                                    controls
+                                    src={m.fileUrl}
+                                    className="chat-video"
+                                  />
+                                </a>
                               ) : (
                                 <a
                                   href={m.fileUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="file-link"
+                                  className="file-card"
                                 >
-                                  <i className="fa-solid fa-file"></i>
-                                  Open File
+                                  <div className="file-icon">
+                                    <i className="fa-solid fa-file"></i>
+                                  </div>
+
+                                  <div className="file-info">
+                                    <div className="file-name">
+                                      {m.fileName || "Unknown file"}
+                                    </div>
+
+                                    <div className="file-meta">
+                                      {m.fileType?.split("/")[1] || "file"} •{" "}
+                                      {m.fileSize
+                                        ? (m.fileSize / 1024).toFixed(1) + " KB"
+                                        : ""}
+                                    </div>
+                                  </div>
                                 </a>
                               )}
                               {m.text && (
@@ -419,6 +451,7 @@ export default function ChatArea({
                             </>
                           )}
                         </div>
+
                         {isOwn && m._id && (
                           <div className="msg-actions">
                             {(() => {
@@ -628,6 +661,14 @@ export default function ChatArea({
           currentUserId={userId}
           onClose={() => setShowInfoModal(false)}
           onGroupUpdated={onGroupUpdated}
+          onGroupDeleted={onGroupDeleted}
+        />
+      )}
+
+      {uploadingFile && (
+        <UploadProgress
+          fileName={uploadingFile.name}
+          progress={uploadingFile.progress}
         />
       )}
     </div>

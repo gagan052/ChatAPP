@@ -26,6 +26,14 @@ const messageSchema = new mongoose.Schema(
       type: String,
     },
 
+    fileName: {             
+      type: String,
+    },
+
+    fileSize: {              
+      type: Number,
+    },
+
     isEdited: {
       type: Boolean,
       default: false,

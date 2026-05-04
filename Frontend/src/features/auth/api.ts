@@ -27,6 +27,7 @@ export const uploadProfilePic = async (file: File): Promise<string> => {
 export const uploadFile = async (file: File) => {
 
   const formData = new FormData();
+  
   formData.append("file", file);
 
   return api("/api/users/upload-file", {

@@ -1,0 +1,30 @@
+.file-upload-box{
+    position: absolute;
+    top: -300px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+}
+
+.file-upload-box {
+  background: #2f2f2f;
+  padding: 10px;
+  border-radius: 10px;
+  width: 220px;
+  color: white;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #444;
+  border-radius: 5px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #4caf50;
+  width: 0%;
+  transition: width 0.3s ease;
+}

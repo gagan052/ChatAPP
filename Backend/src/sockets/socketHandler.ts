@@ -13,6 +13,18 @@ const getOnlineUsernames = () =>
     .map((id) => userNames[id])
     .filter(Boolean);
 
+/** Notify all socket tabs for each user id (works with existing onlineUsers map). */
+export const notifyUserSockets = (
+  io: Server,
+  userIds: string[],
+  event: string,
+  payload: unknown
+) => {
+  userIds.forEach((uid) => {
+    onlineUsers[uid]?.forEach((sid) => io.to(sid).emit(event, payload));
+  });
+};
+
 export const handleSockets = (io: Server) => {
   io.on("connection", (socket: Socket) => {
     socket.on(
@@ -37,11 +49,15 @@ export const handleSockets = (io: Server) => {
         text,
         fileUrl,
         fileType,
+        fileName,
+        fileSize,
       }: {
         toUserId: string;
         text?: string;
         fileUrl?: string;
         fileType?: string;
+        fileName?: string;
+        fileSize?: number;
       }) => {
         const fromUserId = socketToUser[socket.id];
 
@@ -73,6 +89,8 @@ export const handleSockets = (io: Server) => {
             text: text?.trim() || "",
             fileUrl: fileUrl || null,
             fileType: fileType || null,
+            fileName: fileName || null,
+            fileSize: fileSize || null,
             status: [
               {
                 userId: fromUserId,
@@ -306,7 +324,21 @@ export const handleSockets = (io: Server) => {
     // ── Group message ──
     socket.on(
       "group_message",
-      async ({ groupId, text, fileUrl, fileType }: { groupId: string; text?: string; fileUrl?: string; fileType?: string }) => {
+      async ({
+        groupId,
+        text,
+        fileUrl,
+        fileType,
+        fileName,
+        fileSize,
+      }: {
+        groupId: string;
+        text?: string;
+        fileUrl?: string;
+        fileType?: string;
+        fileName?: string;
+        fileSize?: number;
+      }) => {
         const fromUserId = socketToUser[socket.id];
         if (!fromUserId || !groupId || (!text?.trim() && !fileUrl)) return;
         try {
@@ -327,6 +359,8 @@ export const handleSockets = (io: Server) => {
             text: text?.trim() || "",
             fileUrl: fileUrl || null,
             fileType: fileType || null,
+            fileName: fileName || null, 
+            fileSize: fileSize || null,
             status: [],
           });
           const populated = await msg.populate("sender", "username _id");

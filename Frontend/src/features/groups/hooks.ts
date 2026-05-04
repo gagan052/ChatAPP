@@ -22,6 +22,18 @@ export const updateGroupApi = async (groupId: string, data: { name?: string; ava
   });
 };
 
+export const deleteGroupApi = async (groupId: string) => {
+  return api(`/api/groups/${groupId}`, {
+    method: "DELETE",
+  });
+};
+
+export const removeMemberFromGroupApi = async (groupId: string, memberId: string) => {
+  return api(`/api/groups/${groupId}/members/${memberId}`, {
+    method: "DELETE",
+  });
+};
+
 const fetchGroupMessages = async (groupId: string) => {
   return api(`/api/groups/${groupId}/messages`);
 };

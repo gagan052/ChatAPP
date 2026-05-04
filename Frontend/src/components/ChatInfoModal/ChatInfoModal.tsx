@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { formatLastSeen } from "../../pages/chat/formatLastSeen";
-import { updateGroupApi } from "../../features/groups/hooks";
+import {
+  updateGroupApi,
+  deleteGroupApi,
+  removeMemberFromGroupApi,
+} from "../../features/groups/hooks";
 import { uploadChatFile } from "../../features/chat/api";
 import { toast } from "react-toastify";
 
@@ -16,12 +20,23 @@ interface User {
 
 interface Group {
   _id: string;
-  groupInfo?: { 
-    name: string; 
-    admin?: { _id: string; username: string; profilePic?: string };
+  groupInfo?: {
+    name: string;
+    admin?:
+      | { _id: string; username: string; profilePic?: string }
+      | string;
     avatar?: string;
   };
   participants?: User[];
+}
+
+function getGroupAdminId(group: Group | null | undefined): string | null {
+  const admin = group?.groupInfo?.admin;
+  if (admin == null) return null;
+  if (typeof admin === "object" && admin !== null && "_id" in admin) {
+    return String((admin as { _id: string })._id);
+  }
+  return String(admin);
 }
 
 interface Props {
@@ -32,6 +47,7 @@ interface Props {
   currentUserId: string;
   onClose: () => void;
   onGroupUpdated?: (updatedGroup: any) => void;
+  onGroupDeleted?: (groupId: string) => void;
 }
 
 export default function ChatInfoModal({
@@ -42,12 +58,15 @@ export default function ChatInfoModal({
   currentUserId,
   onClose,
   onGroupUpdated,
+  onGroupDeleted,
 }: Props) {
   const name =
     chatType === "private" ? selectedUser : selectedGroup?.groupInfo?.name;
   const initials = name?.slice(0, 2).toUpperCase() || "?";
-  
-  const isAdmin = selectedGroup?.groupInfo?.admin?._id === currentUserId;
+
+  const adminId = getGroupAdminId(selectedGroup ?? null);
+  const isAdmin =
+    chatType === "group" && adminId === String(currentUserId);
   
   const [isEditingName, setIsEditingName] = useState(false);
   const [newGroupName, setNewGroupName] = useState(name || "");
@@ -75,14 +94,21 @@ export default function ChatInfoModal({
   };
 
   const handleUpdateAvatar = async (file: File) => {
-    if (!selectedGroup?._id) return;
+    if (!selectedGroup?._id || !isAdmin) return;
 
     try {
       setLoading(true);
       console.log("Uploading group avatar file");
       const uploadResponse = await uploadChatFile(file);
       console.log("Uploaded avatar:", uploadResponse);
-      const response = await updateGroupApi(selectedGroup._id, { avatar: uploadResponse.fileUrl });
+      const imageUrl = uploadResponse?.fileUrl;
+      if (!imageUrl) {
+        toast.error("Upload did not return an image URL");
+        return;
+      }
+      const response = await updateGroupApi(selectedGroup._id, {
+        avatar: imageUrl,
+      });
       console.log("Group avatar update response:", response);
       if (response.success && onGroupUpdated) {
         onGroupUpdated(response.group);
@@ -91,6 +117,50 @@ export default function ChatInfoModal({
     } catch (err) {
       console.error("Error updating group avatar:", err);
       toast.error("Failed to update group avatar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!selectedGroup?._id || !isAdmin) return;
+    const mid = String(memberId);
+    if (mid === String(currentUserId)) return;
+
+    try {
+      setLoading(true);
+      const response = await removeMemberFromGroupApi(selectedGroup._id, mid);
+      if (response.success && response.group && onGroupUpdated) {
+        onGroupUpdated(response.group);
+      }
+      toast.success("Member removed");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to remove member");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    if (!selectedGroup?._id || !isAdmin) return;
+    if (
+      !window.confirm(
+        "Delete this group for everyone? All messages will be removed."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await deleteGroupApi(selectedGroup._id);
+      onGroupDeleted?.(selectedGroup._id);
+      toast.success("Group deleted");
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete group");
     } finally {
       setLoading(false);
     }
@@ -136,7 +206,7 @@ export default function ChatInfoModal({
                 (chatType === "group" && selectedGroup?.groupInfo?.avatar)
               ) && initials}
             </div>
-            {isAdmin && (
+            {chatType === "group" && isAdmin && (
               <label
                 htmlFor="groupAvatarInput"
                 style={{
@@ -237,7 +307,10 @@ export default function ChatInfoModal({
               fontSize: "12px", 
               marginBottom: "16px"
             }}>
-              Admin: {selectedGroup.groupInfo.admin.username}
+              Admin:{" "}
+              {typeof selectedGroup.groupInfo.admin === "object"
+                ? selectedGroup.groupInfo.admin.username
+                : "—"}
             </p>
           )}
 
@@ -262,12 +335,22 @@ export default function ChatInfoModal({
                 {selectedGroup?.participants?.length} Members
               </p>
               <div className="member-list" style={{ maxHeight: "200px", overflowY: "auto" }}>
-                {selectedGroup?.participants?.map((member) => (
+                {selectedGroup?.participants?.map((member) => {
+                  const memberKey = member._id || member.id;
+                  const isMemberAdmin =
+                    adminId === String(memberKey);
+                  const canRemove =
+                    isAdmin &&
+                    !isMemberAdmin &&
+                    String(memberKey) !== String(currentUserId);
+
+                  return (
                   <div
-                    key={member._id || member.id}
+                    key={memberKey}
                     className="member-item"
-                    style={{ padding: "8px 0", borderBottom: "1px solid var(--color-surface-2)", display: "flex", alignItems: "center", gap: "10px" }}
+                    style={{ padding: "8px 0", borderBottom: "1px solid var(--color-surface-2)", display: "flex", alignItems: "center", gap: "10px", justifyContent: "space-between" }}
                   >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0, flex: 1 }}>
                     <div className="member-avatar" style={{
                       width: "30px",
                       height: "30px",
@@ -280,20 +363,61 @@ export default function ChatInfoModal({
                     }}>
                       {!member.profilePic && member.username[0].toUpperCase()}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column" }}>
+                    <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
                       <span className="member-name">{member.username}</span>
-                      {selectedGroup?.groupInfo?.admin?._id === (member._id || member.id) && (
+                      {isMemberAdmin && (
                         <span style={{ fontSize: "11px", color: "var(--color-accent)" }}>Admin</span>
                       )}
                     </div>
+                    </div>
+                    {canRemove && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveMember(String(memberKey))}
+                        disabled={loading}
+                        title="Remove from group"
+                        style={{
+                          flexShrink: 0,
+                          padding: "6px 10px",
+                          fontSize: "12px",
+                          border: "1px solid var(--color-border)",
+                          borderRadius: "8px",
+                          background: "var(--color-surface-2)",
+                          cursor: loading ? "not-allowed" : "pointer",
+                          color: "var(--color-text)",
+                        }}
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
-        <div className="modal-footer">
+        <div className="modal-footer" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {chatType === "group" && isAdmin && (
+            <button
+              type="button"
+              onClick={handleDeleteGroup}
+              disabled={loading}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "8px",
+                border: "none",
+                background: "#c0392b",
+                color: "white",
+                cursor: loading ? "not-allowed" : "pointer",
+                fontWeight: 600,
+              }}
+            >
+              Delete group
+            </button>
+          )}
           <button className="modal-cancel" onClick={onClose} style={{ width: "100%" }}>
             Close
           </button>

@@ -1,4 +1,4 @@
-import { createHashRouter } from "react-router-dom";
+import { createHashRouter, Navigate } from "react-router-dom";
 import LoginPage from "../pages/auth/LoginPage";
 import SignupPage from "../pages/auth/SignupPage";
 import ChatPage from "../pages/chat/ChatPage";
@@ -9,8 +9,21 @@ const ProtectedRoute = ({ children }: any) => {
   return token ? children : <LoginPage />;
 };
 
+function PublicRoute({ children }: { children: any }) {
+  const token = localStorage.getItem("token");
+  if (token) return <Navigate to="/chat" />;
+  return children;
+}
+
+
 export const router = createHashRouter([
-  { path: "/", element: <LoginPage /> },
+  { 
+    path: "/",
+    element: 
+     <PublicRoute>
+        <LoginPage />
+     </PublicRoute>
+  },
   { path: "/signup", element: <SignupPage /> },
   {
     path: "/chat",

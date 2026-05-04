@@ -200,8 +200,8 @@
 }
 
 .group-avatar {
-  background: var(--color-group) !important;
-  color: var(--color-group-text) !important;
+  background: var(--color-group);
+  color: var(--color-group-text);
 }
 
 .user-meta {
@@ -289,8 +289,8 @@
   height: 36px;
   min-width: 36px;
   border-radius: var(--radius-full);
-  background: var(--color-accent-light);
-  color: var(--color-accent-text);
+  /* background: var(--color-accent-light); */
+  /* color: var(--color-accent-text); */
   display: flex;
   align-items: center;
   justify-content: center;
