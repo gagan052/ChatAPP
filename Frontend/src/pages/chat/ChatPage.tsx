@@ -66,7 +66,7 @@ export default function ChatPage() {
   const isResizing = useRef(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  // const menuRef = useRef<HTMLDivElement | null>(null);
 
   const { logout } = useAuth();
   const { onlineUsers } = useUsers(username);
@@ -142,20 +142,15 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  useEffect(() => {
-  const handleClickOutside = (event: MouseEvent) => {
-    if (
-      menuRef.current &&
-      !menuRef.current.contains(event.target as Node)
-    ) {
-      setActiveMenu(null);
-    }
+useEffect(() => {
+  const handleClick = () => {
+    setActiveMenu(null);
   };
 
-  document.addEventListener("mousedown", handleClickOutside);
+  document.addEventListener("click", handleClick);
 
   return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
+    document.removeEventListener("click", handleClick);
   };
 }, []);
 
@@ -858,7 +853,7 @@ export default function ChatPage() {
 
                             {
                               <div
-                              ref={menuRef}
+                              // ref={menuRef}
                                 className="chat-menu"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1047,6 +1042,7 @@ export default function ChatPage() {
                                 <div onClick={() => handlePinChat(g._id)}>
                                   {pinnedChats.includes(g._id) ? "Unpin" : "Pin"}
                                 </div>
+
                                 <div
                                   onClick={() => handleDeleteGroupLocal(g._id)}
                                 >
