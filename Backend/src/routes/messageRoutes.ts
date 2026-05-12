@@ -12,8 +12,6 @@ router.delete("/clear/:chatId", protect, clearChat);
 
 router.post("/upload", protect, upload.single("file"), async (req: any, res) => {
   try {
-    
-    console.log("hello")
 
     res.json({
       fileUrl: req.file.path,

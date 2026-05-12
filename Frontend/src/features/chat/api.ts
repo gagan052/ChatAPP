@@ -11,7 +11,7 @@ export const uploadChatFile = async (
   const token = localStorage.getItem("token");
 
   const res = await axios.post(
-    "http://localhost:3001/api/messages/upload",
+    "https://chatapp-1-i5is.onrender.com/api/messages/upload",
     formData,
     {
       headers: {

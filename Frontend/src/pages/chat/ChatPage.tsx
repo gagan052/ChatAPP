@@ -472,7 +472,7 @@ useEffect(() => {
     try {
       let fileData = null;
 
-      //  HANDLE FILE UPLOAD WITH PROGRESS
+      
       if (selectedFile) {
         setUploadingFile({
           name: selectedFile.name,
