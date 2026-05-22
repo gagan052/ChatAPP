@@ -121,11 +121,28 @@ export const useAuth = () => {
     return userCookie ? JSON.parse(userCookie) : null;
   };
 
+   const updateProfilePic = (newProfilePic: string) => {
+  //  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const userCookie = Cookies.get("user");
+  const user = userCookie ? JSON.parse(userCookie) : null;
+
+   if (!user) return;
+
+  //  user.profilePic = newProfilePic;
+  user.profilePic = newProfilePic;
+
+  //  localStorage.setItem("user", JSON.stringify(user));
+   Cookies.set("user", JSON.stringify(user)); 
+  //  localStorage.setItem("user", JSON.stringify(user));
+ };
+
+
   return {
     login,
     signup,
     logout,
     getUser,
     loading,
+    updateProfilePic,
   };
 };
