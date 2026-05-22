@@ -7,12 +7,14 @@ export const socket = io(BASE_URL, {
 
 export const connectSocket = (userId: string, username: string) => {
   if (!socket.connected) socket.connect();
+  console.log("socket Connected from socket.ts");
   socket.emit("join", { userId, username });
 };
 
 export const disconnectSocket = () => {
   if (socket.connected) {
     socket.emit("logout"); 
+    console.log("socket Disconnected from socket.ts");
     socket.disconnect();
   }
 };

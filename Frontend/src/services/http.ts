@@ -1,33 +1,36 @@
-export const BASE_URL = window.location.hostname === "localhost" 
-  ? "http://localhost:3001" 
-  : "https://chatapp-1-i5is.onrender.com";
+export const BASE_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:3001"
+    : "https://chatapp-1-i5is.onrender.com";
 
 export const api = async (url: string, options?: RequestInit) => {
-  const token = localStorage.getItem("token");
-  
   const headers: Record<string, string> = {};
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
+  // Don't set Content-Type for FormData
   const isFormData = options?.body instanceof FormData;
+
   if (!isFormData && options?.method !== "GET") {
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(`${BASE_URL}${url}`, {
-    ...options,
-    headers: {
-      ...headers,
-      ...options?.headers,
-    },
-  });
+  const res = await fetch(
+    `${BASE_URL}${url}`,
 
-  console.log(res);
-  
+    {
+      ...options,
+
+      credentials: "include",
+
+      headers: {
+        ...headers,
+        ...options?.headers,
+      },
+    }
+  );
+
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
+
     throw new Error(errorData.message || "API error");
   }
 

@@ -9,11 +9,12 @@ export default function LoginPage() {
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    login(identifier, password);
+    login(identifier,phone , password);
   };
 
   return (
@@ -29,9 +30,17 @@ export default function LoginPage() {
         />
 
         <input
+          type="tel"
+          placeholder="Phone Number"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          required
+        />
+
+        <input
           type="password"
           placeholder="Password"
-          value={password}
+          value={password}  
           onChange={(e) => setPassword(e.target.value)}
           required
         />

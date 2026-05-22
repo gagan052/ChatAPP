@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { onMessage, offMessage, onMessageUpdated, offMessageUpdated, onMessageDeleted, offMessageDeleted, onChatCleared, offChatCleared, onMessagesSeen, offMessagesSeen } from "./socket";
 import { BASE_URL } from "../../services/http";
 import { socket } from "../../services/socket";
+import Cookies from "js-cookie";
 
 // const BASE_URL = "http://localhost:3001";
 
 const fetchMessages = async (myUserId: string, otherUserId: string) => {
-  const token = localStorage.getItem("token");
+      // const token = localStorage.getItem("token");
+      const token = Cookies.get("token");
+
   const res = await fetch(`${BASE_URL}/api/messages/${myUserId}/${otherUserId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });

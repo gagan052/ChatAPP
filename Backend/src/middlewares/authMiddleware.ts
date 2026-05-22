@@ -1,19 +1,24 @@
 import { verifyToken } from "../utils/jwt";
 
-export const protect = (req:any, res:any, next:any) => {
+export const protect = (req: any, res: any, next: any) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    // Read token from cookies
+    const token = req.cookies.token;
 
     if (!token) {
-      return res.status(401).json({ message: "No token" });
+      return res.status(401).json({
+        message: "No token",
+      });
     }
 
+    // Verify JWT
     const decoded = verifyToken(token);
-
     req.user = decoded;
 
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid token" });
+    return res.status(401).json({
+      message: "Invalid token",
+    });
   }
 };

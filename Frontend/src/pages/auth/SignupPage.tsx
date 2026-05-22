@@ -7,19 +7,27 @@ export default function SignupPage() {
   const { signup, loading } = useAuth();
 
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
-    signup(email, username, password);
+    signup(email, username,phone, password);
   };
 
   return (
     <div className="auth-container">
       <form className="auth-card" onSubmit={handleSubmit}>
         <h2>Create Account </h2>
+
+        <input
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
 
         <input
           type="email"
@@ -30,9 +38,10 @@ export default function SignupPage() {
         />
 
         <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          type="tel"
+          placeholder="Phone Number"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
           required
         />
 

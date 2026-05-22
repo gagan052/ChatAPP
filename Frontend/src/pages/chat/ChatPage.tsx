@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { connectSocket } from "../../services/socket";
 import { useChat } from "../../features/chat/hooks";
+// import Cookies from "js-cookie";
 import {
   deleteGroupApi,
   useGroupChat,
@@ -26,8 +27,11 @@ import {
 import {
   onInvitationReceived,
   offInvitationReceived,
+  onInvitationError,
+  offInvitationError,
 } from "../../features/invitation/socket";
 import { getPinnedChats, togglePinChat } from "../../features/utils/pinChats";
+import SearchBar from "../../components/SearchBar/SearchBar";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -37,11 +41,16 @@ type ChatType = "private" | "group";
 
 export default function ChatPage() {
   const navigate = useNavigate();
-  const username = localStorage.getItem("username") || "";
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-  const userId = currentUser?.id;
+  // const token = Cookies.get("token");
+
+  // if (!token) {
+  //   return null;
+  // }
 
   // Selected conversation
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const userId = currentUser?.id;
+  const [username, setUsername] = useState("");
   const [chatType, setChatType] = useState<ChatType>("private");
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -69,6 +78,7 @@ export default function ChatPage() {
   // const menuRef = useRef<HTMLDivElement | null>(null);
 
   const { logout } = useAuth();
+
   const { onlineUsers } = useUsers(username);
   const { messages: privateMessages } = useChat(userId, selectedUserId);
   const { groups, setGroups, reloadGroups } = useGroups(userId);
@@ -127,6 +137,39 @@ export default function ChatPage() {
   }, [userId]);
 
   useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const res = await api("/api/auth/me");
+
+        setCurrentUser(res.user);
+
+        setUsername(res.user.username);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchMe();
+  }, []);
+
+  useEffect(() => {
+    const fetchInviteCount = async () => {
+      try {
+        const data = await api("/api/invitations/pending");
+        if (data.invitations) {
+          setInviteCount(data.invitations.length);
+        }
+      } catch (err) {
+        console.error("Failed to fetch invite count", err);
+      }
+    };
+
+    if (userId) {
+      fetchInviteCount();
+    }
+  }, [userId]);
+
+  useEffect(() => {
     setPinnedChats(getPinnedChats());
   }, []);
 
@@ -142,17 +185,17 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-useEffect(() => {
-  const handleClick = () => {
-    setActiveMenu(null);
-  };
+  useEffect(() => {
+    const handleClick = () => {
+      setActiveMenu(null);
+    };
 
-  document.addEventListener("click", handleClick);
+    document.addEventListener("click", handleClick);
 
-  return () => {
-    document.removeEventListener("click", handleClick);
-  };
-}, []);
+    return () => {
+      document.removeEventListener("click", handleClick);
+    };
+  }, []);
 
   useEffect(() => {
     const handler = ({ conversation }: any) => {
@@ -257,11 +300,17 @@ useEffect(() => {
     };
   }, []);
 
-  const token = localStorage.getItem("token");
+  useEffect(() => {
+    const handler = ({ message }: { message: string }) => {
+      toast.error(message || "Failed to send invitation");
+    };
 
-  if (!token) {
-    return null;
-  }
+    onInvitationError(handler);
+
+    return () => {
+      offInvitationError(handler);
+    };
+  }, []);
 
   useEffect(() => {
     const handler = ({
@@ -448,6 +497,8 @@ useEffect(() => {
     setSidebarWidth(newWidth);
   };
 
+
+
   const handleSearch = async (value: string) => {
     setSearch(value);
 
@@ -466,13 +517,14 @@ useEffect(() => {
     }
   };
 
+
+
   const handleSend = async () => {
     if (!text.trim() && !selectedFile) return;
 
     try {
       let fileData = null;
 
-      
       if (selectedFile) {
         setUploadingFile({
           name: selectedFile.name,
@@ -570,7 +622,7 @@ useEffect(() => {
       prev.map((u) => (u.id === userId ? { ...u, inviteStatus: "pending" } : u))
     );
 
-    // send socket
+    // send socket    
     sendInvitation(userId);
 
     goHome();
@@ -580,7 +632,6 @@ useEffect(() => {
     setActiveMenu((prev) => (prev === id ? null : id));
   };
 
-  
   const handlePinChat = (chatId: string) => {
     const updated = togglePinChat(chatId);
     setPinnedChats(updated);
@@ -727,13 +778,20 @@ useEffect(() => {
           </div>
         </div>
 
-        <div className="sidebar-search">
+
+
+        <SearchBar value={search} onChange={handleSearch} placeholder="Search users..." />
+
+
+
+
+        {/* <div className="sidebar-search">
           <input
             placeholder="Search..."
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
           />
-        </div>
+        </div> */}
 
         {searchResults.length > 0 && (
           <div className="list-of-user">
@@ -853,7 +911,7 @@ useEffect(() => {
 
                             {
                               <div
-                              // ref={menuRef}
+                                // ref={menuRef}
                                 className="chat-menu"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -884,8 +942,12 @@ useEffect(() => {
                                       padding: "8px 8px",
                                     }}
                                   >
-                                    <div onClick={() => handlePinChat(u.chatId)}>
-                                      {pinnedChats.includes(u.chatId) ? "Unpin" : "Pin"}
+                                    <div
+                                      onClick={() => handlePinChat(u.chatId)}
+                                    >
+                                      {pinnedChats.includes(u.chatId)
+                                        ? "Unpin"
+                                        : "Pin"}
                                     </div>
                                     <div
                                       onClick={() => handleDeleteChat(u.chatId)}
@@ -1040,7 +1102,9 @@ useEffect(() => {
                                 }}
                               >
                                 <div onClick={() => handlePinChat(g._id)}>
-                                  {pinnedChats.includes(g._id) ? "Unpin" : "Pin"}
+                                  {pinnedChats.includes(g._id)
+                                    ? "Unpin"
+                                    : "Pin"}
                                 </div>
 
                                 <div

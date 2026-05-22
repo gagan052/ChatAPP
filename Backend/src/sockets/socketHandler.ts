@@ -3,6 +3,7 @@ import Message from "../models/message";
 import Conversation from "../models/conversation";
 import Invitation from "../models/invitation";
 import User from "../models/user";
+import { SocketAddress } from "node:net";
 
 const onlineUsers: Record<string, string[]> = {};
 const socketToUser: Record<string, string> = {};
@@ -27,6 +28,9 @@ export const notifyUserSockets = (
 
 export const handleSockets = (io: Server) => {
   io.on("connection", (socket: Socket) => {
+    
+    console.log("Socket connected:", socket.id);
+
     socket.on(
       "join",
       ({ userId, username }: { userId: string; username: string }) => {
@@ -359,7 +363,7 @@ export const handleSockets = (io: Server) => {
             text: text?.trim() || "",
             fileUrl: fileUrl || null,
             fileType: fileType || null,
-            fileName: fileName || null, 
+            fileName: fileName || null,
             fileSize: fileSize || null,
             status: [],
           });
@@ -386,24 +390,42 @@ export const handleSockets = (io: Server) => {
 
     // ── Invitations ──
     socket.on("send_invitation", async ({ toUserId }) => {
-      const senderId = socket.data.userId;
+      const senderId = socketToUser[socket.id];
+
       if (!senderId || !toUserId) return;
+
+      console.log("Invitation socket backend", { senderId, toUserId });
+
       const receiverId = typeof toUserId === "object" ? toUserId.id : toUserId;
       try {
-        const existingRecent = await Invitation.findOne({
-          sender: senderId,
-          receiver: receiverId,
-          createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        // 1. Check if already contacts
+        const existingConversation = await Conversation.findOne({
+          type: "private",
+          participants: { $all: [senderId, receiverId] },
         });
-        if (existingRecent) {
-          socket.emit("invitation:error", {
-            message: "You can send only one invite in 24 hours",
-          });
+        if (existingConversation) {
+          socket.emit("invitation:error", { message: "Already contacts" });
           return;
         }
-        const pending = await Invitation.findOne({
+
+        // 2. Check if rejected in last 24h
+        const rejected = await Invitation.findOne({
           sender: senderId,
           receiver: receiverId,
+          status: "rejected",
+          rejectedAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        });
+        if (rejected) {
+          socket.emit("invitation:error", { message: "Wait 24h after rejection" });
+          return;
+        }
+
+        // 3. Check if pending
+        const pending = await Invitation.findOne({
+          $or: [
+            { sender: senderId, receiver: receiverId },
+            { sender: receiverId, receiver: senderId },
+          ],
           status: "pending",
         });
         if (pending) {
@@ -412,17 +434,22 @@ export const handleSockets = (io: Server) => {
           });
           return;
         }
+
         const invitation = await Invitation.create({
           sender: senderId,
           receiver: receiverId,
         });
+
+        const populated = await invitation.populate("sender", "username profilePic");
+
         if (onlineUsers[receiverId]) {
           onlineUsers[receiverId].forEach((id) =>
-            io.to(id).emit("invitation:received", invitation)
+            io.to(id).emit("invitation:received", populated)
           );
         }
       } catch (err) {
         console.error("Invite error:", err);
+        socket.emit("invitation:error", { message: "Failed to send invitation" });
       }
     });
 

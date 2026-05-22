@@ -1,77 +1,131 @@
 import axios from "axios";
+import Cookies from "js-cookie";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { disconnectSocket } from "../../services/socket";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 import { BASE_URL } from "../../services/http";
 
 export const useAuth = () => {
   const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
 
-  const login = async (identifier: string, password: string) => {
+  // ================= LOGIN =================
+
+  const login = async (identifier: string, phone: string, password: string) => {
     setLoading(true);
+
     try {
-      const res = await axios.post(`${BASE_URL}/api/auth/login`, {
-        identifier,
-        password,
-      });
+      const res = await axios.post(
+        `${BASE_URL}/api/auth/login`,
+
+        {
+          identifier,
+          phone,
+          password,
+        },
+
+        {
+          withCredentials: true,
+        }
+      );
 
       if (res.data.success) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("username", res.data.user.username);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        toast.success("Logged In Successfully");
+
         navigate("/chat");
-        toast.success("logged In Successfully");
       } else {
-        toast(res.data.message || "Invalid credentials");
+        toast.error(res.data.message);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast("Server error");
+
+      toast.error(err.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
-  const signup = async (email: string, username: string, password: string) => {
+  // ================= SIGNUP =================
+
+  const signup = async (
+    email: string,
+    username: string,
+    phone: string,
+    password: string
+  ) => {
     setLoading(true);
+
     try {
-      const res = await axios.post(`${BASE_URL}/api/auth/signup`, {
-        email,
-        username,
-        password,
-      });
+      const res = await axios.post(
+        `${BASE_URL}/api/auth/signup`,
+
+        {
+          username,
+          email,
+          phone,
+          password,
+        },
+
+        {
+          withCredentials: true,
+        }
+      );
 
       if (res.data.success) {
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("username", res.data.user.username);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        navigate("/chat");
         toast.success("Signup Successfully");
+
+        navigate("/chat");
       } else {
-        toast(res.data.message || "User already exists");
+        toast.error(res.data.message);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast("Server error");
+
+      toast.error(err.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    disconnectSocket();
-    localStorage.clear();
-    navigate("/");
-    toast.success("logged Out Successfully");
+  // ================= LOGOUT =================
+
+  const logout = async () => {
+    try {
+      await axios.post(
+        `${BASE_URL}/api/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      Cookies.remove("user");
+
+      disconnectSocket();
+
+      navigate("/");
+
+      toast.success("Logged Out Successfully");
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const updateProfilePic = (newProfilePic: string) => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    user.profilePic = newProfilePic;
-    localStorage.setItem("user", JSON.stringify(user));
+  // ================= GET USER =================
+
+  const getUser = () => {
+    const userCookie = Cookies.get("user");
+
+    return userCookie ? JSON.parse(userCookie) : null;
   };
 
-  return { login, signup, logout, updateProfilePic, loading };
+  return {
+    login,
+    signup,
+    logout,
+    getUser,
+    loading,
+  };
 };

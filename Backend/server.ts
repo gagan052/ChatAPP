@@ -5,7 +5,9 @@ import app from "./src/app.ts";
 import { connectDB } from "./src/config/db.ts";
 import { handleSockets } from "./src/sockets/socketHandler.ts";
 
+
 dotenv.config();
+
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -15,6 +17,8 @@ const io = new Server(server, {
 });
 
 app.set("io", io);
+
+console.log("socket from server.ts")
 
 connectDB();
 handleSockets(io);
