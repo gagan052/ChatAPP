@@ -68,9 +68,20 @@ export const useGroupChat = (myUserId: string, selectedGroupId: string | null) =
   }, [selectedGroupId]);
 
   useEffect(() => {
-    if (!selectedGroupId) return;
+    if (!selectedGroupId || selectedGroupId === "undefined") return;
+    
+    let mounted = true;
     setMessages([]);
-    fetchGroupMessages(selectedGroupId).then(setMessages).catch(console.error);
+    
+    fetchGroupMessages(selectedGroupId)
+      .then(data => {
+        if (mounted) setMessages(data);
+      })
+      .catch(console.error);
+
+    return () => {
+      mounted = false;
+    };
   }, [selectedGroupId]);
 
   useEffect(() => {

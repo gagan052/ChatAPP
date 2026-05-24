@@ -8,6 +8,7 @@ import ChatPage from "../pages/chat/ChatPage";
 import SettingsPage from "../pages/settings/SettingsPage";
 
 import { api } from "../services/http";
+import Layout from "./Layout";
 
 // ================= PROTECTED ROUTE =================
 
@@ -63,24 +64,25 @@ export const router = createHashRouter([
     path: "/signup",
     element: <SignupPage />,
   },
-
   {
-    path: "/chat",
-
-    element: (
-      <ProtectedRoute>
-        <ChatPage />
-      </ProtectedRoute>
-    ),
-  },
-
-  {
-    path: "/settings",
-
-    element: (
-      <ProtectedRoute>
-        <SettingsPage />
-      </ProtectedRoute>
-    ),
+    element: <Layout />,
+    children: [
+      {
+        path: "/chat",
+        element: (
+          <ProtectedRoute>
+            <ChatPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/settings",
+        element: (
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        ),
+      },
+    ],
   },
 ]);

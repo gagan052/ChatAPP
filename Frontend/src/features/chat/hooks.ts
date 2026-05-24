@@ -1,20 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { onMessage, offMessage, onMessageUpdated, offMessageUpdated, onMessageDeleted, offMessageDeleted, onChatCleared, offChatCleared, onMessagesSeen, offMessagesSeen } from "./socket";
-import { BASE_URL } from "../../services/http";
+import { api } from "../../services/http";
 import { socket } from "../../services/socket";
-import Cookies from "js-cookie";
-
-// const BASE_URL = "http://localhost:3001";
 
 const fetchMessages = async (myUserId: string, otherUserId: string) => {
-      // const token = localStorage.getItem("token");
-      const token = Cookies.get("token");
-
-  const res = await fetch(`${BASE_URL}/api/messages/${myUserId}/${otherUserId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error("Failed to fetch messages");
-  return res.json();
+  return api(`/api/messages/${myUserId}/${otherUserId}`);
 };
 
 export const useChat = (myUserId: string, selectedUserId: string | null) => {
@@ -27,10 +17,20 @@ export const useChat = (myUserId: string, selectedUserId: string | null) => {
 
   // Load history when conversation changes
   useEffect(() => {
-    if (!selectedUserId || !myUserId) return;
+    if (!selectedUserId || !myUserId || myUserId === "undefined" || selectedUserId === "undefined") return;
+    
+    let mounted = true;
     setMessages([]);
-    fetchMessages(myUserId, selectedUserId).then(setMessages).catch(console.error);
+    
+    fetchMessages(myUserId, selectedUserId)
+      .then(data => {
+        if (mounted) setMessages(data);
+      })
+      .catch(console.error);
 
+    return () => {
+      mounted = false;
+    };
   }, [selectedUserId, myUserId]);
 
   // Real-time incoming messages

@@ -105,6 +105,10 @@ export default function ChatArea({
   const [editText, setEditText] = useState("");
 
   useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
     if (!chatId) return;
 
     joinChatRoom(chatId);
