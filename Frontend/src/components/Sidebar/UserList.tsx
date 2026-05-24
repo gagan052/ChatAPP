@@ -8,8 +8,7 @@ function getInitials(name: string) {
 
 const UserList: React.FC = () => {
   const { 
-    sortedChats, chatType, selectedUserId, setSelectedUserId, setChatType, 
-    setSelectedUser, unreadCounts, activeMenu, pinnedChats, 
+    sortedChats, chatType, selectedUserId, unreadCounts, activeMenu, pinnedChats, 
     setPinnedChats, toggleMenu, handleDeleteChat, selectPrivateChat
   } = useChatContext();
 

@@ -7,7 +7,7 @@ function getInitials(name: string) {
 
 const GroupList: React.FC = () => {
   const { 
-    groups, chatType, selectedGroup, setChatType, 
+    groups, chatType, selectedGroup, 
     handleDeleteGroup, toggleMenu, activeMenu, selectGroupChat 
   } = useChatContext();
 

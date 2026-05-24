@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import Cookies from 'js-cookie';
 import { socket, connectSocket } from '../services/socket';
@@ -78,7 +77,6 @@ interface ChatContextType {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const navigate = useNavigate();
   const { logout, getUser } = useAuth();
   
   const [currentUser, setCurrentUser] = useState<any>(() => getUser());
