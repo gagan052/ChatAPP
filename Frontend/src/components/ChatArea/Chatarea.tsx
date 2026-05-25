@@ -441,6 +441,7 @@ export default function ChatArea({
                                     </div>
                                   </div>
                                 </a>
+
                               )}
                               {m.text && (
                                 <div style={{ marginTop: "8px" }}>{m.text}</div>

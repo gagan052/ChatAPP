@@ -122,7 +122,6 @@ export const useAuth = () => {
   };
 
    const updateProfilePic = (newProfilePic: string) => {
-  //  const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userCookie = Cookies.get("user");
   const user = userCookie ? JSON.parse(userCookie) : null;
 
@@ -131,9 +130,7 @@ export const useAuth = () => {
   //  user.profilePic = newProfilePic;
   user.profilePic = newProfilePic;
 
-  //  localStorage.setItem("user", JSON.stringify(user));
    Cookies.set("user", JSON.stringify(user)); 
-  //  localStorage.setItem("user", JSON.stringify(user));
  };
 
 

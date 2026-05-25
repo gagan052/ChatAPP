@@ -82,11 +82,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currentUser, setCurrentUser] = useState<any>(() => getUser());
   const userId = currentUser?.id || currentUser?._id;
   const [username, setUsername] = useState(() => currentUser?.username || "");
-  const [chatType, setChatType] = useState<ChatType>(() => (localStorage.getItem("chatType") as ChatType) || "private");
-  const [selectedUser, setSelectedUser] = useState<string | null>(() => localStorage.getItem("selectedUser"));
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(() => localStorage.getItem("selectedUserId"));
+  const [chatType, setChatType] = useState<ChatType>(() => (sessionStorage.getItem("chatType") as ChatType) || "private");
+  const [selectedUser, setSelectedUser] = useState<string | null>(() => sessionStorage.getItem("selectedUser"));
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(() => sessionStorage.getItem("selectedUserId"));
   const [selectedGroup, setSelectedGroup] = useState<any | null>(() => {
-    const saved = localStorage.getItem("selectedGroup");
+    const saved = sessionStorage.getItem("selectedGroup");
     try {
       return saved ? JSON.parse(saved) : null;
     } catch {
@@ -108,22 +108,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
 
   useEffect(() => {
-    localStorage.setItem("chatType", chatType);
+    sessionStorage.setItem("chatType", chatType);
   }, [chatType]);
 
   useEffect(() => {
-    if (selectedUser) localStorage.setItem("selectedUser", selectedUser);
-    else localStorage.removeItem("selectedUser");
+    if (selectedUser) sessionStorage.setItem("selectedUser", selectedUser);
+    else sessionStorage.removeItem("selectedUser");
   }, [selectedUser]);
 
   useEffect(() => {
-    if (selectedUserId) localStorage.setItem("selectedUserId", selectedUserId);
-    else localStorage.removeItem("selectedUserId");
+    if (selectedUserId) sessionStorage.setItem("selectedUserId", selectedUserId);
+    else sessionStorage.removeItem("selectedUserId");
   }, [selectedUserId]);
 
   useEffect(() => {
-    if (selectedGroup) localStorage.setItem("selectedGroup", JSON.stringify(selectedGroup));
-    else localStorage.removeItem("selectedGroup");
+    if (selectedGroup) sessionStorage.setItem("selectedGroup", JSON.stringify(selectedGroup));
+    else sessionStorage.removeItem("selectedGroup");
   }, [selectedGroup]);
 
   const { onlineUsers } = useUsers(username);
@@ -496,10 +496,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSelectedUser(uName);
     setSelectedUserId(uId);
     setSelectedGroup(null);
-    localStorage.setItem("chatType", "private");
-    localStorage.setItem("selectedUser", uName);
-    localStorage.setItem("selectedUserId", uId);
-    localStorage.removeItem("selectedGroup");
+    sessionStorage.setItem("chatType", "private");
+    sessionStorage.setItem("selectedUser", uName);
+    sessionStorage.setItem("selectedUserId", uId);
+    sessionStorage.removeItem("selectedGroup");
   };
 
   const selectGroupChat = (group: any) => {
@@ -507,10 +507,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSelectedGroup(group);
     setSelectedUser(null);
     setSelectedUserId(null);
-    localStorage.setItem("chatType", "group");
-    localStorage.setItem("selectedGroup", JSON.stringify(group));
-    localStorage.removeItem("selectedUser");
-    localStorage.removeItem("selectedUserId");
+    sessionStorage.setItem("chatType", "group");
+    sessionStorage.setItem("selectedGroup", JSON.stringify(group));
+    sessionStorage.removeItem("selectedUser");
+    sessionStorage.removeItem("selectedUserId");
   };
 
   const handleGroupCreated = (group: any) => {
