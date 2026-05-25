@@ -1,9 +1,9 @@
 import http from "http";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
-import app from "./src/app.ts";
-import { connectDB } from "./src/config/db.ts";
-import { handleSockets } from "./src/sockets/socketHandler.ts";
+import app from "./src-back/app.ts";
+import { connectDB } from "./src-back/config/db.ts";
+import { handleSockets } from "./src-back/sockets/socketHandler.ts";
 
 
 dotenv.config();

@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import Cookies from 'js-cookie';
 import { socket, connectSocket } from '../services/socket';
 import { api } from '../services/http';
 import { useAuth } from '../features/auth/hooks';
@@ -182,7 +181,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCurrentUser(userData);
           setUsername(userData.username);
           // Sync with cookie for faster reload next time
-          Cookies.set("user", JSON.stringify(userData));
+          // Cookies.set("userData", JSON.stringify(userData));
         }
       } catch (err) {
         console.error(err);

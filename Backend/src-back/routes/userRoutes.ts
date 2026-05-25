@@ -14,7 +14,7 @@ const handleSingleUpload =
       if (err) {
         console.error("UPLOAD MIDDLEWARE ERROR:", err);
         return res.status(500).json({
-          message:"File upload failed",
+          message: "File upload failed",
         });
       }
       return next();
@@ -47,7 +47,14 @@ router.get("/search", async (req: any, res: any) => {
     }
 
     const users = await User.find({
-      username: { $regex: q, $options: "i" },
+      $or: [
+        {
+          username: { $regex: q, $options: "i" },
+        },
+        {
+          phone: { $regex: q, $options: "i" },
+        },
+      ],
     }).select("_id username profilePic");
 
     const results: any[] = [];

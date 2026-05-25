@@ -8,9 +8,28 @@ import "./settings.css";
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { updateProfilePic } = useAuth();
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const getCookie = (name: string) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+
+    if (parts.length === 2) {
+      return parts.pop()?.split(";").shift();
+    }
+
+    return null;
+  };
+
+  const userCookie = getCookie("user");
+
+  const currentUser = userCookie
+    ? JSON.parse(decodeURIComponent(userCookie))
+    : null;
+
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(currentUser?.profilePic || null);
+  const [preview, setPreview] = useState<string | null>(
+    currentUser?.profilePic || null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,49 +64,53 @@ export default function SettingsPage() {
     }
   };
 
+  console.log(currentUser.username);
+
   return (
     <div className="settings-container">
       <div className="settings-card">
         <button className="back-btn" onClick={() => navigate("/chat")}>
           <i className="fa-solid fa-arrow-left"></i> Back to Chat
         </button>
-        
+
         <h2>Profile Settings</h2>
-        
+
         <div className="profile-section">
           <div className="profile-pic-container">
-            <div 
-              className="profile-pic-preview" 
-              style={{ 
+            <div
+              className="profile-pic-preview"
+              style={{
                 backgroundImage: preview ? `url(${preview})` : "none",
-                backgroundColor: "var(--color-surface-2)"
+                backgroundColor: "var(--color-surface-2)",
               }}
             >
               {!preview && <i className="fa-solid fa-user"></i>}
             </div>
-            <button 
-              className="change-pic-btn" 
+            <button
+              className="change-pic-btn"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
             >
               Select Image
             </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              accept="image/*" 
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
               style={{ display: "none" }}
             />
           </div>
 
           <div className="user-info">
-            <p><strong>Username:</strong> {currentUser?.username}</p> 
+            <p>
+              <strong>Username:</strong> {currentUser?.username}
+            </p>
           </div>
 
-          <button 
-            className="save-btn" 
-            onClick={handleUpload} 
+          <button
+            className="save-btn"
+            onClick={handleUpload}
             disabled={uploading}
           >
             {uploading ? "Uploading..." : "Save Changes"}

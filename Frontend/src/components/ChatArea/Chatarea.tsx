@@ -100,12 +100,13 @@ export default function ChatArea({
   onGroupDeleted,
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
   }, [messages]);
 
   useEffect(() => {

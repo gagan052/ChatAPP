@@ -787,3 +787,8 @@
 .menu-dropdown div:hover {
   background: #444;
 }
+
+.menu-dropdown button{
+  background-color: transparent;
+  color: white;
+}
