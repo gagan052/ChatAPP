@@ -46,6 +46,8 @@ app.use("/api/groups", protect,groupRoutes);
 app.use("/api/users", protect, userRoutes);
 app.use("/api/conversations",protect, conversationRoute);
 
+app.use("/health", (req, res) => res.json({ status: "ok" }));
+
 app.use((err: any, req: any, res: any, next: any) => {
   console.error("UNHANDLED API ERROR:", err);
   if (res.headersSent) {

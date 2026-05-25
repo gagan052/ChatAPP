@@ -1,12 +1,9 @@
 import { createHashRouter, Navigate } from "react-router-dom";
-
 import { useEffect, useState } from "react";
-
 import LoginPage from "../pages/auth/LoginPage";
 import SignupPage from "../pages/auth/SignupPage";
 import ChatPage from "../pages/chat/ChatPage";
 import SettingsPage from "../pages/settings/SettingsPage";
-
 import { api } from "../services/http";
 import Layout from "./Layout";
 
@@ -14,7 +11,6 @@ import Layout from "./Layout";
 
 const ProtectedRoute = ({ children }: any) => {
   const [loading, setLoading] = useState(true);
-
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
