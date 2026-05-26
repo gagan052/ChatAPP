@@ -44,6 +44,7 @@ interface Props {
   selectedUserObj?: User;
   selectedGroup?: Group | null;
   currentUserId: string;
+  onlineUsers: string[];
   onClose: () => void;
   onGroupUpdated?: (updatedGroup: any) => void;
   onGroupDeleted?: (groupId: string) => void;
@@ -55,6 +56,7 @@ export default function ChatInfoModal({
   selectedUserObj,
   selectedGroup,
   currentUserId,
+  onlineUsers,
   onClose,
   onGroupUpdated,
   onGroupDeleted,
@@ -65,6 +67,10 @@ export default function ChatInfoModal({
 
   const adminId = getGroupAdminId(selectedGroup ?? null);
   const isAdmin = chatType === "group" && adminId === String(currentUserId);
+  const isOnline =
+    chatType === "private" &&
+    selectedUserObj?._id &&
+    onlineUsers.includes(String(selectedUserObj._id));
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [newGroupName, setNewGroupName] = useState(name || "");
@@ -216,28 +222,90 @@ export default function ChatInfoModal({
     }
   };
 
+  const confirmDeleteGroup = (onConfirm: () => void) => {
+    toast.error(
+      ({ closeToast }) => (
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+          }}
+        >
+          <span>
+            Delete this group for everyone? All messages will be removed.
+          </span>
+
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              justifyContent: "flex-end",
+            }}
+          >
+            <button
+              onClick={closeToast}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "6px",
+                border: "1px solid #ccc",
+                background: "#eee",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={() => {
+                closeToast();
+                onConfirm();
+              }}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "6px",
+                border: "none",
+                background: "#c0392b",
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        closeButton: false,
+      }
+    );
+  };
+
   const handleDeleteGroup = async () => {
     if (!selectedGroup?._id || !isAdmin) return;
-    if (
-      !window.confirm(
-        "Delete this group for everyone? All messages will be removed."
-      )
-    ) {
-      return;
-    }
 
-    try {
-      setLoading(true);
-      await deleteGroupApi(selectedGroup._id);
-      onGroupDeleted?.(selectedGroup._id);
-      toast.success("Group deleted");
-      onClose();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to delete group");
-    } finally {
-      setLoading(false);
-    }
+    confirmDeleteGroup(async () => {
+      try {
+        setLoading(true);
+
+        await deleteGroupApi(selectedGroup._id);
+
+        onGroupDeleted?.(selectedGroup._id);
+
+        toast.success("Group deleted");
+
+        onClose();
+      } catch (err) {
+        console.error(err);
+
+        toast.error("Failed to delete group");
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   return (
@@ -269,12 +337,19 @@ export default function ChatInfoModal({
                 height: "80px",
                 fontSize: "32px",
                 margin: "0 auto 16px",
-                background:
+
+                backgroundImage:
                   chatType === "private" && selectedUserObj?.profilePic
-                    ? `url(${selectedUserObj.profilePic}) center/cover`
+                    ? `url(${selectedUserObj.profilePic})`
                     : chatType === "group" && selectedGroup?.groupInfo?.avatar
-                    ? `url(${selectedGroup.groupInfo.avatar}) center/cover`
-                    : "var(--color-accent-light)",
+                    ? `url(${selectedGroup.groupInfo.avatar})`
+                    : undefined,
+
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                backgroundColor: "var(--color-accent-light)",
+
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -435,7 +510,11 @@ export default function ChatInfoModal({
                 >
                   Last Seen
                 </p>
-                <p>{formatLastSeen(selectedUserObj?.lastSeen)}</p>
+                <p>
+                  {isOnline
+                    ? "online"
+                    : formatLastSeen(selectedUserObj?.lastSeen)}
+                </p>
               </div>
             </div>
           ) : (

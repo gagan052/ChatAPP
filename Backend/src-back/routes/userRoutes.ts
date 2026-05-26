@@ -8,8 +8,7 @@ import cloudinary from "../config/cloudinary";
 
 const router = express.Router();
 
-const handleSingleUpload =
-  (fieldName: string) => (req: any, res: any, next: any) => {
+const handleSingleUpload = (fieldName: string) => (req: any, res: any, next: any) => {
     upload.single(fieldName)(req, res, (err: any) => {
       if (err) {
         console.error("UPLOAD MIDDLEWARE ERROR:", err);
@@ -21,7 +20,7 @@ const handleSingleUpload =
     });
   };
 
-router.get("/", async (req, res) => {
+router.get("/", protect, async (req, res) => {
   try {
     const users = await User.find().select("_id username profilePic");
     res.json(
@@ -37,7 +36,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/search", async (req: any, res: any) => {
+router.get("/search", protect, async (req: any, res: any) => {
   try {
     const { q } = req.query;
     const currentUserId = req.user?.id;
@@ -105,11 +104,7 @@ router.get("/search", async (req: any, res: any) => {
   }
 });
 
-router.post(
-  "/upload-profile",
-  protect,
-  handleSingleUpload("image"),
-  async (req: any, res) => {
+router.post("/upload-profile",protect,handleSingleUpload("image"),async (req: any, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No image file uploaded" });
@@ -146,11 +141,7 @@ router.post(
   }
 );
 
-router.post(
-  "/upload-file",
-  protect,
-  handleSingleUpload("file"),
-  async (req: any, res) => {
+router.post( "/upload-file", protect, handleSingleUpload("file"), async (req: any, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }

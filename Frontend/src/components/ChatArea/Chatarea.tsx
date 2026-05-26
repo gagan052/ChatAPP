@@ -64,6 +64,7 @@ interface ChatAreaProps {
   selectedUserId: string | null;
   selectedGroup: Group | null;
   chatId: string | null;
+  onlineUsers: string[];
   uploadingFile?: { name: string; progress: number } | null;
   messages: Message[];
   text: string;
@@ -238,10 +239,10 @@ export default function ChatArea({
 
   const headerInitials = headerName ? getInitials(headerName) : "";
 
-  const isOnline =
-    chatType === "private" &&
-    selectedUser &&
-    onlineUsers.includes(selectedUser || "");
+const isOnline =
+  chatType === "private" &&
+  selectedUserId &&
+  onlineUsers.includes(selectedUserId);
 
   return (
     <div className="chat-area">
@@ -665,6 +666,7 @@ export default function ChatArea({
           selectedUserObj={selectedUserObj}
           selectedGroup={selectedGroup}
           currentUserId={userId}
+          onlineUsers={onlineUsers}
           onClose={() => setShowInfoModal(false)}
           onGroupUpdated={onGroupUpdated}
           onGroupDeleted={onGroupDeleted}
