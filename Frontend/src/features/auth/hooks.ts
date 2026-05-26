@@ -92,26 +92,30 @@ export const useAuth = () => {
   // ================= LOGOUT =================
 
   const logout = async () => {
-    try {
-      await axios.post(
-        `${BASE_URL}/api/auth/logout`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
+  try {
+    await axios.post(
+      `${BASE_URL}/api/auth/logout`,
+      {},
+      {
+        withCredentials: true,
+      }
+    );
 
-      Cookies.remove("user");
+    Cookies.remove("user");
 
-      disconnectSocket();
+    // this automatically triggers backend disconnect
+    disconnectSocket();
 
-      navigate("/");
+    navigate("/");
 
-      toast.success("Logged Out Successfully");
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    toast.success(
+      "Logged Out Successfully"
+    );
+
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   // ================= GET USER =================
 
@@ -121,18 +125,17 @@ export const useAuth = () => {
     return userCookie ? JSON.parse(userCookie) : null;
   };
 
-   const updateProfilePic = (newProfilePic: string) => {
-  const userCookie = Cookies.get("user");
-  const user = userCookie ? JSON.parse(userCookie) : null;
+  const updateProfilePic = (newProfilePic: string) => {
+    const userCookie = Cookies.get("user");
+    const user = userCookie ? JSON.parse(userCookie) : null;
 
-   if (!user) return;
+    if (!user) return;
 
-  //  user.profilePic = newProfilePic;
-  user.profilePic = newProfilePic;
+    //  user.profilePic = newProfilePic;
+    user.profilePic = newProfilePic;
 
-   Cookies.set("user", JSON.stringify(user)); 
- };
-
+    Cookies.set("user", JSON.stringify(user));
+  };
 
   return {
     login,

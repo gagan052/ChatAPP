@@ -24,9 +24,8 @@ const emitToUser = async (
 };
 
 const getOnlineUsers = async () => {
-  return await redis.smembers("online_users");
+  return await redis.smembers("chatapp:online_users");
 };
-
 
 /** Notify all socket tabs for each user id (works with existing onlineUsers map). */
 export const notifyUserSockets = async (
@@ -50,24 +49,23 @@ export const handleSockets = (io: Server) => {
   io.on("connection", (socket: Socket) => {
     console.log("Socket connected:", socket.id);
 
-    socket.on("join", async ({ userId }: { userId: string }) => {
-      if (!userId) return;
-
+    socket.on("join", async ({ userId }) => {
       socket.data.userId = userId;
 
-      socketToUser[socket.id] = userId;
+      // socket -> user mapping
+      await redis.set(`chatapp:socket:${socket.id}:user`, userId);
 
-      // store socket
-      await redis.sadd(`user:${userId}:sockets`, socket.id);
+      // user -> sockets mapping
+      await redis.sadd(`chatapp:user:${userId}:sockets`, socket.id);
 
-      // mark online
-      await redis.sadd("online_users", userId);
+      // online users set
+      await redis.sadd("chatapp:online_users", userId);
 
       const online = await getOnlineUsers();
 
       io.emit("online_users", online);
 
-      console.log("User joined:", userId);
+      console.log(`User joined: ${userId}`);
     });
 
     // ── Private message ──
@@ -682,74 +680,74 @@ export const handleSockets = (io: Server) => {
     });
 
     // ── Logout — write lastSeen BEFORE socket closes ──
-    socket.on("logout", async () => {
-      const userId = socketToUser[socket.id];
+    // socket.on("logout", async () => {
+    //   const userId = socketToUser[socket.id];
 
-      if (!userId) return;
+    //   if (!userId) return;
 
-      try {
-        // remove this socket
-        await redis.srem(`user:${userId}:sockets`, socket.id);
+    //   try {
+    //     // remove this socket
+    //     await redis.srem(`user:${userId}:sockets`, socket.id);
 
-        // check remaining sockets
-        const remainingSockets = await redis.smembers(`user:${userId}:sockets`);
+    //     // check remaining sockets
+    //     const remainingSockets = await redis.smembers(`user:${userId}:sockets`);
 
-        // fully offline
-        if (remainingSockets.length === 0) {
-          // remove from online users
-          await redis.srem("online_users", userId);
+    //     // fully offline
+    //     if (remainingSockets.length === 0) {
+    //       // remove from online users
+    //       await redis.srem("online_users", userId);
 
-          // update last seen
-          const now = new Date();
+    //       // update last seen
+    //       const now = new Date();
 
-          await User.findByIdAndUpdate(userId, {
-            lastSeen: now,
-          });
+    //       await User.findByIdAndUpdate(userId, {
+    //         lastSeen: now,
+    //       });
 
-          // notify frontend
-          io.emit("user_last_seen", {
-            userId,
-            lastSeen: now.toISOString(),
-          });
-        }
+    //       // notify frontend
+    //       io.emit("user_last_seen", {
+    //         userId,
+    //         lastSeen: now.toISOString(),
+    //       });
+    //     }
 
-        // remove socket mapping
-        delete socketToUser[socket.id];
+    //     // remove socket mapping
+    //     delete socketToUser[socket.id];
 
-        // emit updated online users
-        const online = await redis.smembers("online_users");
+    //     // emit updated online users
+    //     const online = await redis.smembers("online_users");
 
-        io.emit("online_users", online);
+    //     io.emit("online_users", online);
 
-        console.log(`User logged out: ${userId}`);
-      } catch (err) {
-        console.error("logout error:", err);
-      }
-    });
+    //     console.log(`User logged out: ${userId}`);
+    //   } catch (err) {
+    //     console.error("logout error:", err);
+    //   }
+    // });
 
     // ── Disconnect — fallback lastSeen write ──
     socket.on("disconnect", async () => {
       try {
-        const userId = socketToUser[socket.id];
+        const userId = await redis.get(`chatapp:socket:${socket.id}:user`);
 
         if (!userId) return;
 
-        // remove socket from user's socket set
-        await redis.srem(`user:${userId}:sockets`, socket.id);
+        // remove socket
+        await redis.srem(`chatapp:user:${userId}:sockets`, socket.id);
 
-        // remaining active sockets
-        const remainingSockets = await redis.smembers(`user:${userId}:sockets`);
+        // remaining sockets
+        const remainingSockets = await redis.smembers(`chatapp:user:${userId}:sockets`);
 
         // fully offline
         if (remainingSockets.length === 0) {
           const now = new Date();
 
           await Promise.all([
-            // remove online status
-            redis.srem("online_users", userId),
+            // remove from online users
+            redis.srem("chatapp:online_users", userId),
 
-            // cleanup empty socket set
-            redis.del(`user:${userId}:sockets`),
+            // delete empty socket set
+            redis.del(`chatapp:user:${userId}:sockets`),
 
             // update last seen
             User.findByIdAndUpdate(userId, {
@@ -757,15 +755,14 @@ export const handleSockets = (io: Server) => {
             }),
           ]);
 
-          // notify frontend
           io.emit("user_last_seen", {
             userId,
             lastSeen: now.toISOString(),
           });
         }
 
-        // cleanup local mapping
-        delete socketToUser[socket.id];
+        // cleanup socket mapping
+        await redis.del(`chatapp:socket:${socket.id}:user`);
 
         // updated online users
         const online = await getOnlineUsers();

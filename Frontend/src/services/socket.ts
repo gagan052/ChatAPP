@@ -18,3 +18,7 @@ export const disconnectSocket = () => {
     socket.disconnect();
   }
 };
+
+export const logoutSocket = () => {
+  socket.emit("logout");
+};
