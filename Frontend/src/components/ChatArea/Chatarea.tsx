@@ -64,7 +64,6 @@ interface ChatAreaProps {
   selectedUserId: string | null;
   selectedGroup: Group | null;
   chatId: string | null;
-  onlineUsers: string[];
   uploadingFile?: { name: string; progress: number } | null;
   messages: Message[];
   text: string;
