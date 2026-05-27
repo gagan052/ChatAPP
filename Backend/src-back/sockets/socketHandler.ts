@@ -46,6 +46,7 @@ export const handleSockets = (io: Server) => {
   io.on("connection", (socket: Socket) => {
     console.log(chalk.yellow("Socket connected:"), socket.id);
 
+    // ── Join with user ID ──
     socket.on("join", async ({ userId }) => {
       socket.data.userId = userId;
 
@@ -164,6 +165,7 @@ export const handleSockets = (io: Server) => {
       }
     );
 
+    // ── Mark messages seen ──
     socket.on("mark_seen", async ({ chatId, userId }) => {
       try {
         const messages = await Message.find({
@@ -199,12 +201,14 @@ export const handleSockets = (io: Server) => {
       }
     });
 
+    // ── Join chat room ──
     socket.on("join_chat", (chatId: string) => {
       if (!chatId) return;
       socket.join(chatId);
       console.log(`Socket ${socket.id} joined chat room: ${chatId}`);
     });
 
+    // ── Leave chat room ──
     socket.on(
       "edit_message",
       async ({
@@ -265,6 +269,7 @@ export const handleSockets = (io: Server) => {
       }
     );
 
+    // ── Delete message ──
     socket.on(
       "delete_message",
       async ({
@@ -342,6 +347,7 @@ export const handleSockets = (io: Server) => {
       }
     );
 
+    // ── Clear chat ──
     socket.on(
       "clear_chat",
       async ({
@@ -599,6 +605,7 @@ export const handleSockets = (io: Server) => {
       }
     });
 
+    // ── Accept invitation ──
     socket.on("accept_invitation", async (invitationId) => {
       try {
         const invitation = await Invitation.findById(invitationId);
@@ -613,7 +620,6 @@ export const handleSockets = (io: Server) => {
         // create private conversation
         const conversation = await Conversation.create({
           type: "private",
-
           participants: [invitation.sender, invitation.receiver],
         });
 
@@ -621,6 +627,12 @@ export const handleSockets = (io: Server) => {
         const populatedConv = await Conversation.findById(conversation._id)
           .populate("participants", "username _id lastSeen profilePic")
           .populate("lastMessage", "text fileUrl fileType createdAt sender");
+
+        // CLEAR REDIS CHAT LIST CACHE
+        await Promise.all([
+          redis.del(`chat:list:${invitation.sender}`),
+          redis.del(`chat:list:${invitation.receiver}`),
+        ]);
 
         // payload
         const payload = {
@@ -651,6 +663,7 @@ export const handleSockets = (io: Server) => {
       }
     });
 
+    // ── Reject invitation ──
     socket.on("reject_invitation", async (invitationId: string) => {
       try {
         const invitation: any = await Invitation.findById(invitationId);
@@ -685,6 +698,7 @@ export const handleSockets = (io: Server) => {
       }
     });
 
+    // ── Logout ──
     socket.on("logout", async () => {
       try {
         const userId = socket.data.userId;

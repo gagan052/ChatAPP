@@ -9,6 +9,7 @@ function getInitials(name: string) {
 const SidebarHeader: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, username, inviteCount, setActiveTab, setShowModal, logout } = useChatContext();
+  
 
   return (
     <div className="sidebar-header">

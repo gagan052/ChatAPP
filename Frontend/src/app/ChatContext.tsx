@@ -1,15 +1,33 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { toast } from 'react-toastify';
-import { socket, connectSocket } from '../services/socket';
-import { api } from '../services/http';
-import { useAuth } from '../features/auth/hooks';
-import { useUsers } from '../features/users/hooks';
-import { useChat } from '../features/chat/hooks';
-import { useGroupChat, useGroups, deleteGroupApi } from '../features/groups/hooks';
-import { sendMessage, sendGroupMessage } from '../features/chat/socket';
-import { uploadChatFile } from '../features/chat/api';
-import { onInvitationAccepted, offInvitationAccepted, onInvitationReceived, offInvitationReceived, onInvitationError, offInvitationError, sendInvitation } from '../features/invitation/socket';
-import { getPinnedChats } from '../features/utils/pinChats';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { toast } from "react-toastify";
+import { socket, connectSocket } from "../services/socket";
+import { api } from "../services/http";
+import { useAuth } from "../features/auth/hooks";
+import { useUsers } from "../features/users/hooks";
+import { useChat } from "../features/chat/hooks";
+import {
+  useGroupChat,
+  useGroups,
+  deleteGroupApi,
+} from "../features/groups/hooks";
+import { sendMessage, sendGroupMessage } from "../features/chat/socket";
+import { uploadChatFile } from "../features/chat/api";
+import {
+  onInvitationAccepted,
+  offInvitationAccepted,
+  onInvitationReceived,
+  offInvitationReceived,
+  onInvitationError,
+  offInvitationError,
+  sendInvitation,
+} from "../features/invitation/socket";
+import { getPinnedChats } from "../features/utils/pinChats";
 
 type ChatType = "private" | "group";
 
@@ -29,7 +47,11 @@ interface ChatContextType {
   inviteCount: number;
   setInviteCount: (count: number | ((prev: number) => number)) => void;
   unreadCounts: Record<string, number>;
-  setUnreadCounts: (counts: Record<string, number> | ((prev: Record<string, number>) => Record<string, number>)) => void;
+  setUnreadCounts: (
+    counts:
+      | Record<string, number>
+      | ((prev: Record<string, number>) => Record<string, number>)
+  ) => void;
   chatUsers: any[];
   setChatUsers: (users: any[] | ((prev: any[]) => any[])) => void;
   searchResults: any[];
@@ -75,15 +97,23 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { logout, getUser } = useAuth();
-  
+
   const [currentUser, setCurrentUser] = useState<any>(() => getUser());
   const userId = currentUser?.id || currentUser?._id;
   const [username, setUsername] = useState(() => currentUser?.username || "");
-  const [chatType, setChatType] = useState<ChatType>(() => (sessionStorage.getItem("chatType") as ChatType) || "private");
-  const [selectedUser, setSelectedUser] = useState<string | null>(() => sessionStorage.getItem("selectedUser"));
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(() => sessionStorage.getItem("selectedUserId"));
+  const [chatType, setChatType] = useState<ChatType>(
+    () => (sessionStorage.getItem("chatType") as ChatType) || "private"
+  );
+  const [selectedUser, setSelectedUser] = useState<string | null>(() =>
+    sessionStorage.getItem("selectedUser")
+  );
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(() =>
+    sessionStorage.getItem("selectedUserId")
+  );
   const [selectedGroup, setSelectedGroup] = useState<any | null>(() => {
     const saved = sessionStorage.getItem("selectedGroup");
     try {
@@ -103,7 +133,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [search, setSearch] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [uploadingFile, setUploadingFile] = useState<{ name: string; progress: number } | null>(null);
+  const [uploadingFile, setUploadingFile] = useState<{
+    name: string;
+    progress: number;
+  } | null>(null);
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
 
   useEffect(() => {
@@ -116,19 +149,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [selectedUser]);
 
   useEffect(() => {
-    if (selectedUserId) sessionStorage.setItem("selectedUserId", selectedUserId);
+    if (selectedUserId)
+      sessionStorage.setItem("selectedUserId", selectedUserId);
     else sessionStorage.removeItem("selectedUserId");
   }, [selectedUserId]);
 
   useEffect(() => {
-    if (selectedGroup) sessionStorage.setItem("selectedGroup", JSON.stringify(selectedGroup));
+    if (selectedGroup)
+      sessionStorage.setItem("selectedGroup", JSON.stringify(selectedGroup));
     else sessionStorage.removeItem("selectedGroup");
   }, [selectedGroup]);
 
   const { onlineUsers } = useUsers(username);
   const { messages: privateMessages } = useChat(userId, selectedUserId);
   const { groups, setGroups, reloadGroups } = useGroups(userId);
-  const { messages: groupMessages } = useGroupChat(userId, selectedGroup?._id ?? null);
+  const { messages: groupMessages } = useGroupChat(
+    userId,
+    selectedGroup?._id ?? null
+  );
 
   const selectedUserObj = chatUsers.find((u) => u.id === selectedUserId);
   const messages = chatType === "private" ? privateMessages : groupMessages;
@@ -142,17 +180,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 0;
   });
 
- const loadChats = useCallback(async () => {
-  if (!userId) return;
+  const loadChats = useCallback(async () => {
+    if (!userId) return;
 
-  try {
-    const data = await api("/api/conversations");
+    try {
+      const data = await api("/api/conversations");
 
-    setChatUsers(data);
-  } catch (err) {
-    console.error(err);
-  }
-}, [userId]);
+      setChatUsers(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, [userId]);
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -161,7 +199,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (res.user) {
           const userData = {
             ...res.user,
-            id: res.user.id || res.user._id
+            id: res.user.id || res.user._id,
           };
           setCurrentUser(userData);
           setUsername(userData.username);
@@ -209,22 +247,43 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const handler = ({ conversation }: any) => {
-      const otherUser = conversation.participants.find((p: any) => p._id !== userId);
-      if (otherUser) {
-        setChatUsers((prev) => {
-          const exists = prev.find((u) => u.id === otherUser._id);
-          if (exists) return prev;
-          return [{ id: otherUser._id, username: otherUser.username, lastSeen: otherUser.lastSeen, profilePic: otherUser.profilePic }, ...prev];
-        });
-        setSelectedUserId(otherUser._id);
-      }
+      const otherUser = conversation.participants.find(
+        (p: any) => p._id !== userId
+      );
+
+      if (!otherUser) return;
+
+      setChatUsers((prev) => {
+        // remove existing user first
+        const filtered = prev.filter((u) => u.id !== otherUser._id);
+
+        // create updated user object
+        const newUser = {
+          id: otherUser._id,
+          username: otherUser.username,
+          lastSeen: otherUser.lastSeen,
+          profilePic: otherUser.profilePic,
+          chatId: conversation._id,
+          lastMessage: "",
+        };
+
+        // insert at TOP
+        return [newUser, ...filtered];
+      });
+
+      setSelectedUserId(otherUser._id);
+
       setActiveTab("chats");
+
       setInviteCount(0);
-      loadChats();
     };
+
     onInvitationAccepted(handler);
-    return () => offInvitationAccepted(handler);
-  }, [userId, loadChats]);
+
+    return () => {
+      offInvitationAccepted(handler);
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (!selectedUserId) return;
@@ -235,26 +294,41 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const handler = (msg: any) => {
       const msgSenderId = String(msg.sender?._id ?? msg.sender);
       if (msgSenderId !== userId && msgSenderId !== selectedUserId) {
-        setUnreadCounts((prev) => ({ ...prev, [msgSenderId]: (prev[msgSenderId] || 0) + 1 }));
+        setUnreadCounts((prev) => ({
+          ...prev,
+          [msgSenderId]: (prev[msgSenderId] || 0) + 1,
+        }));
       }
       const lastMessageText = msg.text || (msg.fileUrl ? "📎 File" : "");
       setChatUsers((prev) =>
         prev.map((u) => {
-          if (u.id === msgSenderId || (msgSenderId === userId && u.id === selectedUserId)) {
-            return { ...u, lastMessage: lastMessageText, lastMessageFileUrl: msg.fileUrl, lastMessageFileType: msg.fileType };
+          if (
+            u.id === msgSenderId ||
+            (msgSenderId === userId && u.id === selectedUserId)
+          ) {
+            return {
+              ...u,
+              lastMessage: lastMessageText,
+              lastMessageFileUrl: msg.fileUrl,
+              lastMessageFileType: msg.fileType,
+            };
           }
           return u;
         })
       );
     };
     socket.on("receive_private_message", handler);
-    return () => { socket.off("receive_private_message", handler); };
+    return () => {
+      socket.off("receive_private_message", handler);
+    };
   }, [userId, selectedUserId]);
 
   useEffect(() => {
     const handler = () => reloadGroups();
     socket.on("receive_group_message", handler);
-    return () => { socket.off("receive_group_message", handler); };
+    return () => {
+      socket.off("receive_group_message", handler);
+    };
   }, [reloadGroups]);
 
   useEffect(() => {
@@ -263,54 +337,100 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.info(`New invitation from ${inv.sender?.username || "someone"}`);
     };
     onInvitationReceived(handler);
-    return () => { offInvitationReceived(handler); };
+    return () => {
+      offInvitationReceived(handler);
+    };
   }, []);
 
   useEffect(() => {
-    const handler = ({ message }: { message: string }) => toast.error(message || "Failed to send invitation");
+    const handler = ({ message }: { message: string }) =>
+      toast.error(message || "Failed to send invitation");
     onInvitationError(handler);
-    return () => { offInvitationError(handler); };
+    return () => {
+      offInvitationError(handler);
+    };
   }, []);
 
   useEffect(() => {
-    const handler = ({ userId, lastSeen }: { userId: string; lastSeen: string }) => {
-      setChatUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, lastSeen } : u)));
+    const handler = ({
+      userId,
+      lastSeen,
+    }: {
+      userId: string;
+      lastSeen: string;
+    }) => {
+      setChatUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, lastSeen } : u))
+      );
     };
     socket.on("user_last_seen", handler);
-    return () => { socket.off("user_last_seen", handler); };
+    return () => {
+      socket.off("user_last_seen", handler);
+    };
   }, []);
 
   useEffect(() => {
     const handler = (updatedMessage: any) => {
-      const chatId = String(updatedMessage.chatId?._id ?? updatedMessage.chatId);
-      setChatUsers((prev) => prev.map((u) => (u.chatId === chatId ? { ...u, lastMessage: updatedMessage.text } : u)));
+      const chatId = String(
+        updatedMessage.chatId?._id ?? updatedMessage.chatId
+      );
+      setChatUsers((prev) =>
+        prev.map((u) =>
+          u.chatId === chatId ? { ...u, lastMessage: updatedMessage.text } : u
+        )
+      );
     };
     socket.on("message:updated", handler);
-    return () => { socket.off("message:updated", handler); };
+    return () => {
+      socket.off("message:updated", handler);
+    };
   }, []);
 
   useEffect(() => {
-    const handler = ({ chatId, newLastMessage, newLastMessageFileUrl, newLastMessageFileType }: any) => {
+    const handler = ({
+      chatId,
+      newLastMessage,
+      newLastMessageFileUrl,
+      newLastMessageFileType,
+    }: any) => {
       setChatUsers((prev) =>
         prev.map((u) =>
           u.chatId === String(chatId)
-            ? { ...u, lastMessage: newLastMessage, lastMessageFileUrl: newLastMessageFileUrl, lastMessageFileType: newLastMessageFileType }
+            ? {
+                ...u,
+                lastMessage: newLastMessage,
+                lastMessageFileUrl: newLastMessageFileUrl,
+                lastMessageFileType: newLastMessageFileType,
+              }
             : u
         )
       );
     };
     socket.on("message:deleted", handler);
-    return () => { socket.off("message:deleted", handler); };
+    return () => {
+      socket.off("message:deleted", handler);
+    };
   }, []);
 
   useEffect(() => {
     const handler = ({ chatId }: { chatId: string }) => {
       setChatUsers((prev) =>
-        prev.map((u) => (u.chatId === String(chatId) ? { ...u, lastMessage: "", lastMessageFileUrl: null, lastMessageFileType: null } : u))
+        prev.map((u) =>
+          u.chatId === String(chatId)
+            ? {
+                ...u,
+                lastMessage: "",
+                lastMessageFileUrl: null,
+                lastMessageFileType: null,
+              }
+            : u
+        )
       );
     };
     socket.on("chat:cleared", handler);
-    return () => { socket.off("chat:cleared", handler); };
+    return () => {
+      socket.off("chat:cleared", handler);
+    };
   }, []);
 
   useEffect(() => {
@@ -322,13 +442,22 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
     socket.on("chat:deleted", handler);
-    return () => { socket.off("chat:deleted", handler); };
+    return () => {
+      socket.off("chat:deleted", handler);
+    };
   }, [selectedUserObj]);
 
-  const handleGroupDeletedFromModal = useCallback((groupId: string) => {
-    setGroups((prev) => prev.filter((g) => String(g._id) !== String(groupId)));
-    setSelectedGroup((sg: any) => sg && String(sg._id) === String(groupId) ? null : sg);
-  }, [setGroups, setSelectedGroup]);
+  const handleGroupDeletedFromModal = useCallback(
+    (groupId: string) => {
+      setGroups((prev) =>
+        prev.filter((g) => String(g._id) !== String(groupId))
+      );
+      setSelectedGroup((sg: any) =>
+        sg && String(sg._id) === String(groupId) ? null : sg
+      );
+    },
+    [setGroups, setSelectedGroup]
+  );
 
   const handleDeleteChat = (chatId: string) => {
     toast.info(
@@ -341,8 +470,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
               onClick={async () => {
                 closeToast();
                 try {
-                  await api(`/api/conversations/${chatId}`, { method: "DELETE" });
-                  setChatUsers((prev) => prev.filter((c) => c.chatId !== chatId));
+                  await api(`/api/conversations/${chatId}`, {
+                    method: "DELETE",
+                  });
+                  setChatUsers((prev) =>
+                    prev.filter((c) => c.chatId !== chatId)
+                  );
                   if (selectedUserObj?.chatId === chatId) {
                     setSelectedUser(null);
                     setSelectedUserId(null);
@@ -358,7 +491,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           </div>
         </div>
       ),
-      { position: "top-center", autoClose: false, closeOnClick: false, draggable: false }
+      {
+        position: "top-center",
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+      }
     );
   };
 
@@ -508,12 +646,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const onGroupUpdatedSocket = ({ group }: { group: any }) => {
       if (!group?._id) return;
-      setGroups((prev) => prev.map((g) => (String(g._id) === String(group._id) ? group : g)));
-      setSelectedGroup((sg: any) => sg && String(sg._id) === String(group._id) ? group : sg);
+      setGroups((prev) =>
+        prev.map((g) => (String(g._id) === String(group._id) ? group : g))
+      );
+      setSelectedGroup((sg: any) =>
+        sg && String(sg._id) === String(group._id) ? group : sg
+      );
     };
-    
-    const onGroupDeletedSocket = ({ groupId }: { groupId: string }) => handleGroupDeletedFromModal(groupId);
-    const onRemovedFromSocket = ({ groupId }: { groupId: string }) => handleGroupDeletedFromModal(groupId);
+
+    const onGroupDeletedSocket = ({ groupId }: { groupId: string }) =>
+      handleGroupDeletedFromModal(groupId);
+    const onRemovedFromSocket = ({ groupId }: { groupId: string }) =>
+      handleGroupDeletedFromModal(groupId);
     socket.on("group:updated", onGroupUpdatedSocket);
     socket.on("group:deleted", onGroupDeletedSocket);
     socket.on("group:removed_from", onRemovedFromSocket);
@@ -529,18 +673,67 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [chatType, selectedGroup]);
 
   return (
-    <ChatContext.Provider value={{
-      currentUser, username, chatType, setChatType, selectedUser, setSelectedUser,
-      selectedUserId, setSelectedUserId, selectedGroup, setSelectedGroup,
-      activeTab, setActiveTab, inviteCount, setInviteCount, unreadCounts, setUnreadCounts,
-      chatUsers, setChatUsers, searchResults, setSearchResults, activeMenu, setActiveMenu,
-      sidebarWidth, setSidebarWidth, text, setText, search, setSearch,
-      selectedFile, setSelectedFile, showModal, setShowModal, uploadingFile, setUploadingFile,
-      pinnedChats, setPinnedChats, onlineUsers, messages, groups, setGroups, reloadGroups,
-      loadChats, logout, userId, selectedUserObj, sortedChats, handleGroupDeletedFromModal,
-      handleDeleteChat, handleDeleteGroup, handleInvite, handleSearch, toggleMenu,
-      handleSend, handleFileSelect, handleGroupCreated, selectPrivateChat, selectGroupChat
-    }}>
+    <ChatContext.Provider
+      value={{
+        currentUser,
+        username,
+        chatType,
+        setChatType,
+        selectedUser,
+        setSelectedUser,
+        selectedUserId,
+        setSelectedUserId,
+        selectedGroup,
+        setSelectedGroup,
+        activeTab,
+        setActiveTab,
+        inviteCount,
+        setInviteCount,
+        unreadCounts,
+        setUnreadCounts,
+        chatUsers,
+        setChatUsers,
+        searchResults,
+        setSearchResults,
+        activeMenu,
+        setActiveMenu,
+        sidebarWidth,
+        setSidebarWidth,
+        text,
+        setText,
+        search,
+        setSearch,
+        selectedFile,
+        setSelectedFile,
+        showModal,
+        setShowModal,
+        uploadingFile,
+        setUploadingFile,
+        pinnedChats,
+        setPinnedChats,
+        onlineUsers,
+        messages,
+        groups,
+        setGroups,
+        reloadGroups,
+        loadChats,
+        logout,
+        userId,
+        selectedUserObj,
+        sortedChats,
+        handleGroupDeletedFromModal,
+        handleDeleteChat,
+        handleDeleteGroup,
+        handleInvite,
+        handleSearch,
+        toggleMenu,
+        handleSend,
+        handleFileSelect,
+        handleGroupCreated,
+        selectPrivateChat,
+        selectGroupChat,
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );
@@ -549,7 +742,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useChatContext = () => {
   const context = useContext(ChatContext);
   if (context === undefined) {
-    throw new Error('useChatContext must be used within a ChatProvider');
+    throw new Error("useChatContext must be used within a ChatProvider");
   }
   return context;
 };

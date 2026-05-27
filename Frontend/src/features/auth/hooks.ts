@@ -92,36 +92,40 @@ export const useAuth = () => {
   // ================= LOGOUT =================
 
   const logout = async () => {
-  try {
-    await axios.post(
-      `${BASE_URL}/api/auth/logout`,
-      {},
-      {
-        withCredentials: true,
-      }
-    );
+    try {
 
-    Cookies.remove("user");
+      await axios.post(
+        `${BASE_URL}/api/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
 
-    // this automatically triggers backend disconnect
-    disconnectSocket();
+      // disconnect socket
+      disconnectSocket();
 
-    navigate("/");
+      // clear cookies
+      Cookies.remove("user");
 
-    toast.success(
-      "Logged Out Successfully"
-    );
+      // clear session storage
+      sessionStorage.clear();
 
-  } catch (err) {
-    console.error(err);
-  }
-};
+      // optional: clear local storage
+      localStorage.clear();
+
+      navigate("/");
+
+      toast.success("Logged Out Successfully");
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // ================= GET USER =================
 
   const getUser = () => {
     const userCookie = Cookies.get("user");
-
     return userCookie ? JSON.parse(userCookie) : null;
   };
 
