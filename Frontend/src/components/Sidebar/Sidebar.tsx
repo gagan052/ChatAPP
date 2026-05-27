@@ -47,7 +47,9 @@ const Sidebar: React.FC = () => {
 
   return (
     <div className="sidebar" style={{ width: `${sidebarWidth}px` }}>
+
       <SidebarHeader />
+      
       <SearchBar value={search} onChange={handleSearch} placeholder="Search users..." />
 
       {searchResults.length > 0 && (

@@ -142,32 +142,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 0;
   });
 
-  const loadChats = useCallback(async () => {
-    if (!userId) return;
-    try {
-      const data = await api("/api/conversations");
-      const mapped = data
-        .map((conv: any) => {
-          const other = conv.participants.find((p: any) => p._id !== userId);
-          if (!other) return null;
-          return {
-            id: other._id,
-            username: other.username,
-            lastSeen: other.lastSeen,
-            profilePic: other.profilePic,
-            lastMessage: conv.lastMessage?.text || "",
-            lastMessageFileUrl: conv.lastMessage?.fileUrl,
-            lastMessageFileType: conv.lastMessage?.fileType,
-            chatId: conv._id,
-          };
-        })
-        .filter(Boolean);
-      const unique = Array.from(new Map(mapped.map((u: any) => [u.id, u])).values());
-      setChatUsers(unique);
-    } catch (err) {
-      console.error(err);
-    }
-  }, [userId]);
+ const loadChats = useCallback(async () => {
+  if (!userId) return;
+
+  try {
+    const data = await api("/api/conversations");
+
+    setChatUsers(data);
+  } catch (err) {
+    console.error(err);
+  }
+}, [userId]);
 
   useEffect(() => {
     const fetchMe = async () => {
@@ -424,7 +409,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((u) => (u.id === userId ? { ...u, inviteStatus: "pending" } : u))
     );
     sendInvitation(userId);
-    goHome();
+
+    console.log("handleInvite chatContext");
+
+    // goHome();
   };
 
   const handleSearch = async (val: string) => {

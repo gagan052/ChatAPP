@@ -18,6 +18,8 @@ const UserList: React.FC = () => {
     setPinnedChats(updated);
   };
 
+  
+
   return (
     <>
       <p className="list-section-label">Recent Chats</p>
@@ -82,12 +84,14 @@ const UserList: React.FC = () => {
                     <i className="fa-solid fa-ellipsis-vertical"></i>
                     {activeMenu === u.id && (
                       <div className="menu-dropdown">
+
                         <button onClick={(e) => handleTogglePin(e, u.chatId)} >
                           {pinnedChats.includes(u.chatId) ? "Unpin Chat" : "Pin Chat"}
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteChat(u.chatId); }} style={{ color: "var(--color-error)" }}>
                           Delete Chat
                         </button>
+
                       </div>
                     )}
                   </div>

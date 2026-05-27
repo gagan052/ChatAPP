@@ -4,11 +4,8 @@ import Conversation from "../models/conversation";
 import Invitation from "../models/invitation";
 import User from "../models/user";
 import { redis } from "../config/redis";
-// import { SocketAddress } from "node:net";
-
-// const onlineUsers: Record<string, string[]> = {};
-const socketToUser: Record<string, string> = {};
-// const userNames: Record<string, string> = {};
+import chalk from "chalk";
+// const socketToUser: Record<string, string> = {};
 
 const emitToUser = async (
   io: Server,
@@ -16,7 +13,7 @@ const emitToUser = async (
   event: string,
   payload: any
 ) => {
-  const sockets = await redis.smembers(`user:${userId}:sockets`);
+  const sockets = await redis.smembers(`chatapp:user:${userId}:sockets`);
 
   sockets.forEach((sid: string) => {
     io.to(sid).emit(event, payload);
@@ -36,7 +33,7 @@ export const notifyUserSockets = async (
 ) => {
   for (const uid of userIds) {
     // get all active sockets of user
-    const sockets = await redis.smembers(`user:${uid}:sockets`);
+    const sockets = await redis.smembers(`chatapp:user:${uid}:sockets`);
 
     // emit to every socket
     sockets.forEach((sid: string) => {
@@ -46,19 +43,18 @@ export const notifyUserSockets = async (
 };
 
 export const handleSockets = (io: Server) => {
+
   io.on("connection", (socket: Socket) => {
-    console.log("Socket connected:", socket.id);
+    
+    console.log(chalk.yellow("Socket connected:"), socket.id);
 
     socket.on("join", async ({ userId }) => {
       socket.data.userId = userId;
 
-      // socket -> user mapping
       await redis.set(`chatapp:socket:${socket.id}:user`, userId);
 
-      // user -> sockets mapping
       await redis.sadd(`chatapp:user:${userId}:sockets`, socket.id);
 
-      // online users set
       await redis.sadd("chatapp:online_users", userId);
 
       const online = await getOnlineUsers();
@@ -86,7 +82,7 @@ export const handleSockets = (io: Server) => {
         fileName?: string;
         fileSize?: number;
       }) => {
-        const fromUserId = socketToUser[socket.id];
+        const fromUserId = socket.data.userId;
 
         if (!fromUserId || !toUserId) return;
 
@@ -105,7 +101,7 @@ export const handleSockets = (io: Server) => {
             });
           }
 
-          console.log("SENDING MESSAGE:", {
+          console.log(chalk.yellow("SENDING MESSAGE:"), {
             fromUserId,
             toUserId,
           });
@@ -155,7 +151,7 @@ export const handleSockets = (io: Server) => {
             updatedMsg
           );
         } catch (err) {
-          console.error("private_message error:", err);
+          console.error(chalk.red("private_message error:"), err);
           socket.emit("error", { message: "Failed to send message" });
         }
       }
@@ -192,7 +188,7 @@ export const handleSockets = (io: Server) => {
           });
         }
       } catch (err) {
-        console.error("mark_seen error:", err);
+        console.error(chalk.red("mark_seen error:"), err);
       }
     });
 
@@ -215,7 +211,7 @@ export const handleSockets = (io: Server) => {
         toUserId?: string;
         isGroup?: boolean;
       }) => {
-        const userId = socketToUser[socket.id];
+        const userId = socket.data.userId;
 
         if (!userId || !messageId || !text?.trim()) return;
 
@@ -273,7 +269,7 @@ export const handleSockets = (io: Server) => {
         toUserId?: string;
         isGroup?: boolean;
       }) => {
-        const userId = socketToUser[socket.id];
+        const userId = socket.data.userId;
 
         if (!userId || !messageId) return;
 
@@ -350,7 +346,7 @@ export const handleSockets = (io: Server) => {
         toUserId?: string;
         isGroup?: boolean;
       }) => {
-        const userId = socketToUser[socket.id];
+        const userId = socket.data.userId;
 
         if (!userId || !chatId) return;
 
@@ -417,7 +413,7 @@ export const handleSockets = (io: Server) => {
         fileName?: string;
         fileSize?: number;
       }) => {
-        const fromUserId = socketToUser[socket.id];
+        const fromUserId = socket.data.userId;
 
         if (!fromUserId || !groupId || (!text?.trim() && !fileUrl)) return;
 
@@ -491,9 +487,12 @@ export const handleSockets = (io: Server) => {
 
     // ── Invitations ──
     socket.on("send_invitation", async ({ toUserId }) => {
-      const senderId = socketToUser[socket.id];
+      const senderId = await redis.get(`chatapp:socket:${socket.id}:user`);
 
-      if (!senderId || !toUserId) return;
+      if (!senderId || !toUserId) {
+        console.log("hello");
+        return;
+      }
 
       console.log("Invitation socket backend", {
         senderId,
@@ -569,8 +568,8 @@ export const handleSockets = (io: Server) => {
         // ───── CREATE INVITATION ─────
         const invitation = await Invitation.create({
           sender: senderId,
-
           receiver: receiverId,
+          status: "pending",
         });
 
         // populate sender info
@@ -679,51 +678,55 @@ export const handleSockets = (io: Server) => {
       }
     });
 
-    // ── Logout — write lastSeen BEFORE socket closes ──
-    // socket.on("logout", async () => {
-    //   const userId = socketToUser[socket.id];
+    socket.on("logout", async () => {
+      try {
+        const userId = socket.data.userId;
 
-    //   if (!userId) return;
+        if (!userId) return;
 
-    //   try {
-    //     // remove this socket
-    //     await redis.srem(`user:${userId}:sockets`, socket.id);
+        // remove current socket
+        await redis.srem(`chatapp:user:${userId}:sockets`, socket.id);
 
-    //     // check remaining sockets
-    //     const remainingSockets = await redis.smembers(`user:${userId}:sockets`);
+        // delete socket mapping
+        await redis.del(`chatapp:socket:${socket.id}:user`);
 
-    //     // fully offline
-    //     if (remainingSockets.length === 0) {
-    //       // remove from online users
-    //       await redis.srem("online_users", userId);
+        // remaining sockets
+        const remainingSockets = await redis.scard(
+          `chatapp:user:${userId}:sockets`
+        );
 
-    //       // update last seen
-    //       const now = new Date();
+        // fully offline
+        if (remainingSockets === 0) {
+          const now = new Date();
 
-    //       await User.findByIdAndUpdate(userId, {
-    //         lastSeen: now,
-    //       });
+          await Promise.all([
+            redis.srem("chatapp:online_users", userId),
 
-    //       // notify frontend
-    //       io.emit("user_last_seen", {
-    //         userId,
-    //         lastSeen: now.toISOString(),
-    //       });
-    //     }
+            redis.del(`chatapp:user:${userId}:sockets`),
 
-    //     // remove socket mapping
-    //     delete socketToUser[socket.id];
+            User.findByIdAndUpdate(userId, {
+              lastSeen: now,
+            }),
+          ]);
 
-    //     // emit updated online users
-    //     const online = await redis.smembers("online_users");
+          io.emit("user_last_seen", {
+            userId,
+            lastSeen: now.toISOString(),
+          });
+        }
 
-    //     io.emit("online_users", online);
+        // updated online users
+        const online = await getOnlineUsers();
 
-    //     console.log(`User logged out: ${userId}`);
-    //   } catch (err) {
-    //     console.error("logout error:", err);
-    //   }
-    // });
+        io.emit("online_users", online);
+
+        console.log(chalk.yellow("User logged out:"), userId);
+
+        socket.disconnect(true);
+      } catch (err) {
+        console.error("logout error:", err);
+      }
+    });
 
     // ── Disconnect — fallback lastSeen write ──
     socket.on("disconnect", async () => {
@@ -736,7 +739,9 @@ export const handleSockets = (io: Server) => {
         await redis.srem(`chatapp:user:${userId}:sockets`, socket.id);
 
         // remaining sockets
-        const remainingSockets = await redis.smembers(`chatapp:user:${userId}:sockets`);
+        const remainingSockets = await redis.smembers(
+          `chatapp:user:${userId}:sockets`
+        );
 
         // fully offline
         if (remainingSockets.length === 0) {
@@ -769,7 +774,7 @@ export const handleSockets = (io: Server) => {
 
         io.emit("online_users", online);
 
-        console.log(`Disconnected: ${socket.id}`);
+        console.log(chalk.yellow("Disconnected:"), socket.id);
       } catch (err) {
         console.error("disconnect error:", err);
       }
