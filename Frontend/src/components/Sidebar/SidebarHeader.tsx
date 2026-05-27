@@ -9,7 +9,7 @@ function getInitials(name: string) {
 const SidebarHeader: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, username, inviteCount, setActiveTab, setShowModal, logout } = useChatContext();
-  
+
 
   return (
     <div className="sidebar-header">
@@ -29,7 +29,8 @@ const SidebarHeader: React.FC = () => {
             border: "2px solid var(--color-surface-2)",
             overflow: "hidden",
           }}
-          onClick={() => navigate("/settings")}
+          // onClick={() => navigate("/settings")}
+
           title="Profile Settings"
         >
           {!currentUser?.profilePic && (
