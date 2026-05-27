@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { useChatContext } from '../../app/ChatContext';
 
 function getInitials(name: string) {
@@ -7,7 +7,7 @@ function getInitials(name: string) {
 }
 
 const SidebarHeader: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const { currentUser, username, inviteCount, setActiveTab, setShowModal, logout } = useChatContext();
 
 
