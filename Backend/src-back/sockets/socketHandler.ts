@@ -43,9 +43,7 @@ export const notifyUserSockets = async (
 };
 
 export const handleSockets = (io: Server) => {
-
   io.on("connection", (socket: Socket) => {
-    
     console.log(chalk.yellow("Socket connected:"), socket.id);
 
     socket.on("join", async ({ userId }) => {
@@ -82,9 +80,13 @@ export const handleSockets = (io: Server) => {
         fileName?: string;
         fileSize?: number;
       }) => {
-        const fromUserId = socket.data.userId;
+        const fromUserId =
+          socket.data.userId ||
+          (await redis.get(`chatapp:socket:${socket.id}:user`));
 
         if (!fromUserId || !toUserId) return;
+
+        console.log("PRIVATE MESSAGE USER:", socket.data.userId);
 
         // must have at least text OR file
         if (!text?.trim() && !fileUrl) return;
@@ -106,6 +108,11 @@ export const handleSockets = (io: Server) => {
             toUserId,
           });
 
+          const isOnline = await redis.sismember(
+            "chatapp:online_users",
+            toUserId
+          );
+
           const msg = await Message.create({
             chatId: conversation._id,
             sender: fromUserId,
@@ -121,7 +128,7 @@ export const handleSockets = (io: Server) => {
               },
               {
                 userId: toUserId,
-                delivered: onlineUsers[toUserId] ? new Date() : null,
+                delivered: isOnline ? new Date() : null,
               },
             ],
           });
