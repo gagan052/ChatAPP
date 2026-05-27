@@ -412,7 +412,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     console.log("handleInvite chatContext");
 
-    // goHome();
+    goHome();
   };
 
   const handleSearch = async (val: string) => {
