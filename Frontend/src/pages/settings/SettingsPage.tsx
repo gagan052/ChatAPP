@@ -22,9 +22,20 @@ export default function SettingsPage() {
 
   const userCookie = getCookie("user");
 
-  const currentUser = userCookie
-    ? JSON.parse(decodeURIComponent(userCookie))
-    : null;
+  let currentUser = null;
+
+  try {
+    currentUser = userCookie
+      ? JSON.parse(decodeURIComponent(userCookie))
+      : null;
+  } catch (err) {
+    console.error("Invalid user cookie");
+  }
+
+  if (!currentUser) {
+    navigate("/");
+    return null;
+  }
 
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(
@@ -64,7 +75,7 @@ export default function SettingsPage() {
     }
   };
 
-  console.log(currentUser.username);
+  console.log(currentUser?.username);
 
   return (
     <div className="settings-container">

@@ -787,8 +787,8 @@ export const handleSockets = (io: Server) => {
             // delete socket set
             redis.del(`chatapp:user:${userId}:sockets`),
 
-            // // REMOVE CHAT CACHE
-            // redis.del(`chat:list:${userId}`),
+            // REMOVE CHAT CACHE
+            redis.del(`chat:list:${userId}`),
 
             // update last seen
             User.findByIdAndUpdate(userId, {
