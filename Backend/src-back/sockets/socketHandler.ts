@@ -623,37 +623,97 @@ export const handleSockets = (io: Server) => {
           participants: [invitation.sender, invitation.receiver],
         });
 
-        // populate participants
+        // populate conversation
         const populatedConv = await Conversation.findById(conversation._id)
           .populate("participants", "username _id lastSeen profilePic")
           .populate("lastMessage", "text fileUrl fileType createdAt sender");
 
-        // CLEAR REDIS CHAT LIST CACHE
-        await Promise.all([
-          redis.del(`chat:list:${invitation.sender}`),
-          redis.del(`chat:list:${invitation.receiver}`),
-        ]);
+        if (!populatedConv) return;
+
+        const senderId = invitation.sender.toString();
+
+        const receiverId = invitation.receiver.toString();
+
+        // helper
+        const updateUserChatList = async (
+          currentUserId: string,
+          otherUserId: string
+        ) => {
+          const otherUser = populatedConv.participants.find(
+            (p: any) => p._id.toString() === otherUserId
+          );
+
+          if (!otherUser) return;
+
+          const cacheKey = `chat:list:${currentUserId}`;
+
+          // current cache
+          const existing = await redis.get(cacheKey);
+
+          let chats = [];
+
+          if (existing) {
+            try {
+              chats = JSON.parse(existing as string);
+            } catch (err) {
+              console.log("Corrupted Redis cache");
+
+              await redis.del(cacheKey);
+
+              chats = [];
+            }
+          }
+
+          // remove duplicates
+          chats = chats.filter((c: any) => c.id !== otherUser._id.toString());
+
+          // new chat object
+          const newChat = {
+            id: otherUser._id,
+            username: otherUser.username,
+            lastSeen: otherUser.lastSeen,
+            profilePic: otherUser.profilePic,
+
+            lastMessage: "",
+
+            lastMessageFileUrl: null,
+
+            lastMessageFileType: null,
+
+            chatId: populatedConv._id,
+          };
+
+          // ADD TO TOP
+          chats.unshift(newChat);
+
+          // save updated cache
+          await redis.set(cacheKey, JSON.stringify(chats), {
+            ex: 300,
+          });
+
+          return chats;
+        };
+
+        // update sender cache
+        const senderChats = await updateUserChatList(senderId, receiverId);
+
+        // update receiver cache
+        const receiverChats = await updateUserChatList(receiverId, senderId);
 
         // payload
         const payload = {
           conversation: populatedConv,
         };
 
-        // emit to sender
-        await emitToUser(
-          io,
-          invitation.sender.toString(),
-          "invitation:accepted",
-          payload
-        );
+        // emit invitation accepted
+        await emitToUser(io, senderId, "invitation:accepted", payload);
 
-        // emit to receiver
-        await emitToUser(
-          io,
-          invitation.receiver.toString(),
-          "invitation:accepted",
-          payload
-        );
+        await emitToUser(io, receiverId, "invitation:accepted", payload);
+
+        // emit UPDATED CHAT LISTS
+        await emitToUser(io, senderId, "chat:list:updated", senderChats);
+
+        await emitToUser(io, receiverId, "chat:list:updated", receiverChats);
       } catch (err) {
         console.error("accept_invitation error:", err);
 
@@ -721,10 +781,16 @@ export const handleSockets = (io: Server) => {
           const now = new Date();
 
           await Promise.all([
+            // remove online user
             redis.srem("chatapp:online_users", userId),
 
+            // delete socket set
             redis.del(`chatapp:user:${userId}:sockets`),
 
+            // // REMOVE CHAT CACHE
+            // redis.del(`chat:list:${userId}`),
+
+            // update last seen
             User.findByIdAndUpdate(userId, {
               lastSeen: now,
             }),
@@ -760,12 +826,12 @@ export const handleSockets = (io: Server) => {
         await redis.srem(`chatapp:user:${userId}:sockets`, socket.id);
 
         // remaining sockets
-        const remainingSockets = await redis.smembers(
+        const remainingSockets = await redis.scard(
           `chatapp:user:${userId}:sockets`
         );
 
         // fully offline
-        if (remainingSockets.length === 0) {
+        if (remainingSockets === 0) {
           const now = new Date();
 
           await Promise.all([
@@ -774,6 +840,9 @@ export const handleSockets = (io: Server) => {
 
             // delete empty socket set
             redis.del(`chatapp:user:${userId}:sockets`),
+
+            // // REMOVE CHAT CACHE
+            // redis.del(`chat:list:${userId}`),
 
             // update last seen
             User.findByIdAndUpdate(userId, {

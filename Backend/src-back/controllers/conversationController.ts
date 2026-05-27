@@ -14,7 +14,13 @@ export const getUserConversations = async (req: any, res: any) => {
     if (cached) {
       console.log(chalk.blue("Redis hit for user conversations"));
 
-      return res.json(cached as string);
+      try {
+        return res.json(JSON.parse(cached as string));
+      } catch (err) {
+        console.log("Invalid cache detected");
+
+        await redis.del(cacheKey);
+      }
     }
 
     console.log(chalk.red("Mongo hit for user conversations"));
@@ -50,7 +56,7 @@ export const getUserConversations = async (req: any, res: any) => {
       .filter(Boolean);
 
     // 4. Cache
-    await redis.set(cacheKey, mapped, {
+    await redis.set(cacheKey, JSON.stringify(mapped), {
       ex: 300,
     });
 
