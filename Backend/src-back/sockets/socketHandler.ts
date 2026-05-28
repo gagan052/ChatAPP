@@ -654,7 +654,8 @@ export const handleSockets = (io: Server) => {
 
           if (existing) {
             try {
-              chats = JSON.parse(existing as string);
+              chats =
+                typeof existing === "string" ? JSON.parse(existing) : existing;
             } catch (err) {
               console.log("Corrupted Redis cache");
 
@@ -687,7 +688,7 @@ export const handleSockets = (io: Server) => {
           chats.unshift(newChat);
 
           // save updated cache
-          await redis.set(cacheKey, JSON.stringify(chats), {
+          await redis.set(cacheKey, chats, {
             ex: 300,
           });
 

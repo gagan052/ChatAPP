@@ -12,7 +12,10 @@ const SidebarHeader: React.FC = () => {
 
 
   return (
+
+
     <div className="sidebar-header">
+
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         <div
           style={{
@@ -47,7 +50,12 @@ const SidebarHeader: React.FC = () => {
         <h3 style={{ margin: 0 }}>Hi, {username}</h3>
       </div>
 
-      <div className="notification" style={{ display: "flex", gap: "6px" }}>
+
+      
+
+      <div className="notification" style={{  display: "flex", gap: "6px", height: "30px" }}>
+
+
         <button
           className="notification-btn"
           onClick={() => setActiveTab("invitations")}
@@ -58,6 +66,7 @@ const SidebarHeader: React.FC = () => {
           <span>{inviteCount > 0 && <span>({inviteCount})</span>}</span>
         </button>
 
+
         <button
           className="new-group-btn"
           onClick={() => setShowModal(true)}
@@ -65,15 +74,27 @@ const SidebarHeader: React.FC = () => {
         >
           <i
             className="fa-solid fa-people-group"
-            style={{ color: "rgb(255, 255, 255)" }}
+            style={{ color: "rgb(255, 255, 255)" , height: "16px"}}
           ></i>
         </button>
 
-        <button className="logout-btn" onClick={logout}>
+
+
+
+        <button className="logout-btn"  onClick={logout}>
           Logout
         </button>
+
+
+
       </div>
+
+
+
     </div>
+
+
+
   );
 };
 

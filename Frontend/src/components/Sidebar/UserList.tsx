@@ -23,6 +23,7 @@ const UserList: React.FC = () => {
   return (
     <>
       <p className="list-section-label">Recent Chats</p>
+
       {sortedChats.map((u) => {
         const isActive = chatType === "private" && selectedUserId === u.id;
         const hasLastFile = u.lastMessageFileUrl;
@@ -88,6 +89,7 @@ const UserList: React.FC = () => {
                         <button onClick={(e) => handleTogglePin(e, u.chatId)} >
                           {pinnedChats.includes(u.chatId) ? "Unpin Chat" : "Pin Chat"}
                         </button>
+                        
                         <button onClick={(e) => { e.stopPropagation(); handleDeleteChat(u.chatId); }} style={{ color: "var(--color-error)" }}>
                           Delete Chat
                         </button>

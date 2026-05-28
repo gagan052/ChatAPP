@@ -1,3 +1,23 @@
+@media (max-width: 768px) {
+
+  .messages {
+    padding: 10px;
+  }
+
+  .msg-wrap {
+    max-width: 90%;
+  }
+
+.chat-image,
+.chat-video {
+
+  max-width: 100%;
+
+  height: auto;
+}
+
+}
+
 .chat-area{
   position: relative;
 }

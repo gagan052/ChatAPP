@@ -1,15 +1,29 @@
-import React from 'react';
-import { useChatContext } from '../../app/ChatContext';
-import SidebarHeader from './SidebarHeader';
-import SearchBar from '../SearchBar/SearchBar';
-import UserList from './UserList';
-import GroupList from './GroupList';
-import InvitationList from '../InvitationList/InvitationList';
+import React from "react";
+import { useChatContext } from "../../app/ChatContext";
+import SidebarHeader from "./SidebarHeader";
+import SearchBar from "../SearchBar/SearchBar";
+import UserList from "./UserList";
+import GroupList from "./GroupList";
+import InvitationList from "../InvitationList/InvitationList";
+import "../../pages/chat/chat.css";
 
 const Sidebar: React.FC = () => {
-  const { 
-    sidebarWidth, setSidebarWidth, search, handleSearch, searchResults, 
-    handleInvite, activeTab, setActiveTab, loadChats, setSearchResults, setSearch
+  const {
+    sidebarWidth,
+    setSidebarWidth,
+    showSidebar,
+    setShowSidebar,
+    isMobile,
+    search,
+    handleSearch,
+    searchResults,
+    inviteCount,
+    handleInvite,
+    activeTab,
+    setActiveTab,
+    loadChats,
+    setSearchResults,
+    setSearch,
   } = useChatContext();
 
   const isResizing = React.useRef(false);
@@ -22,12 +36,15 @@ const Sidebar: React.FC = () => {
     isResizing.current = false;
   }, []);
 
-  const resize = React.useCallback((e: MouseEvent) => {
-    if (!isResizing.current) return;
-    const newWidth = e.clientX;
-    if (newWidth < 200 || newWidth > 500) return;
-    setSidebarWidth(newWidth);
-  }, [setSidebarWidth]);
+  const resize = React.useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing.current) return;
+      const newWidth = e.clientX;
+      if (newWidth < 200 || newWidth > 500) return;
+      setSidebarWidth(newWidth);
+    },
+    [setSidebarWidth]
+  );
 
   React.useEffect(() => {
     window.addEventListener("mousemove", resize);
@@ -46,13 +63,35 @@ const Sidebar: React.FC = () => {
   }, [loadChats, setActiveTab, setSearch, setSearchResults]);
 
   return (
-    <div className="sidebar" style={{ width: `${sidebarWidth}px` }}>
+
+    <>
+
+    {isMobile && showSidebar && (
+  <div
+    className="mobile-overlay"
+    onClick={() => setShowSidebar(false)}
+  />
+)}
+    <div
+      className={`sidebar ${showSidebar ? "mobile-open" : ""}`}
+      style={{
+        width: isMobile ? "100vw" : `${sidebarWidth}px`,
+      }}
+    >
+      {/* {isMobile && showSidebar && (
+        <div className="mobile-overlay" onClick={() => setShowSidebar(false)} />
+      )} */}
 
       <SidebarHeader />
-      
-      <SearchBar value={search} onChange={handleSearch} placeholder="Search users..." />
+
+      <SearchBar
+        value={search}
+        onChange={handleSearch}
+        placeholder="Search users..."
+      />
 
       {searchResults.length > 0 && (
+
         <div className="list-of-user">
           <p className="list-section-label">Search Results</p>
           {searchResults.map((u) => (
@@ -82,37 +121,61 @@ const Sidebar: React.FC = () => {
         </div>
       )}
 
-      {/* <div className="tabs">
+      <div className="tabs">
         <button
           className={activeTab === "chats" ? "active" : ""}
           onClick={() => setActiveTab("chats")}
         >
-          Chats
+          All
         </button>
+
+        <button
+          className={activeTab === "groups" ? "active" : ""}
+          onClick={() => setActiveTab("groups")}
+        >
+          Groups
+        </button>
+
         <button
           className={activeTab === "invitations" ? "active" : ""}
           onClick={() => setActiveTab("invitations")}
         >
           Invitations
+          <span>{inviteCount > 0 && <span>({inviteCount})</span>}</span>
         </button>
-      </div> */}
+      </div>
 
       <div className="sidebar-content">
-        {activeTab === "invitations" ? (
+        {activeTab === "chats" && (
+          <div className="user-list">
+            <UserList />
+          </div>
+        )}
+
+        {activeTab === "groups" && (
+          <div className="user-list">
+            <GroupList />
+          </div>
+        )}
+
+        {activeTab === "invitations" && (
           <InvitationList
             onBack={() => setActiveTab("chats")}
             onAccept={goHome}
           />
-        ) : (
-          <div className="user-list">
-            <UserList />
-            <GroupList />
-          </div>
         )}
+      </div>
+
+      <div className="footer">
+        <button onClick={() => setActiveTab("chats")}>Go Home</button>
+
+        <button>hsj</button>
       </div>
 
       <div className="resizer" onMouseDown={startResizing} />
     </div>
+
+    </>
   );
 };
 

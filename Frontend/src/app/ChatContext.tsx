@@ -60,6 +60,11 @@ interface ChatContextType {
   setActiveMenu: (menu: string | null) => void;
   sidebarWidth: number;
   setSidebarWidth: (width: number) => void;
+  isMobile: boolean;
+  showSidebar: boolean;
+  setShowSidebar: React.Dispatch<React.SetStateAction<boolean>>;
+  mobileChatOpen: boolean;
+  setMobileChatOpen: React.Dispatch<React.SetStateAction<boolean>>;
   text: string;
   setText: (text: string) => void;
   search: string;
@@ -122,13 +127,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
       return null;
     }
   });
-  const [activeTab, setActiveTab] = useState<"chats" | "invitations">("chats");
+  const [activeTab, setActiveTab] = useState<
+    "chats" | "invitations" | "groups"
+  >("chats");
   const [inviteCount, setInviteCount] = useState(0);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [chatUsers, setChatUsers] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [showSidebar, setShowSidebar] = useState(window.innerWidth > 768);
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const [text, setText] = useState("");
   const [search, setSearch] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -138,6 +148,25 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     progress: number;
   } | null>(null);
   const [pinnedChats, setPinnedChats] = useState<string[]>([]);
+
+  {
+    /* mobile - laptop - tablet Device sizes  */
+  }
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+
+      setIsMobile(mobile);
+
+      if (!mobile) {
+        setShowSidebar(true);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     sessionStorage.setItem("chatType", chatType);
@@ -621,6 +650,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     setSelectedUser(uName);
     setSelectedUserId(uId);
     setSelectedGroup(null);
+    if (window.innerWidth <= 768) {
+      setMobileChatOpen(true);
+      setShowSidebar(false);
+    }
+    // if (window.innerWidth <= 768) {
+    //   setShowSidebar(false);
+    // }
+
     sessionStorage.setItem("chatType", "private");
     sessionStorage.setItem("selectedUser", uName);
     sessionStorage.setItem("selectedUserId", uId);
@@ -632,6 +669,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     setSelectedGroup(group);
     setSelectedUser(null);
     setSelectedUserId(null);
+    if (window.innerWidth <= 768) {
+      setMobileChatOpen(true);
+      setShowSidebar(false);
+    }
     sessionStorage.setItem("chatType", "group");
     sessionStorage.setItem("selectedGroup", JSON.stringify(group));
     sessionStorage.removeItem("selectedUser");
@@ -642,6 +683,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
     reloadGroups();
     selectGroupChat(group);
   };
+
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const hasSelectedChat =
+      (chatType === "private" && selectedUserId) ||
+      (chatType === "group" && selectedGroup);
+
+    if (hasSelectedChat) {
+      setMobileChatOpen(true);
+
+      setShowSidebar(false);
+    } else {
+      setMobileChatOpen(false);
+
+      setShowSidebar(true);
+    }
+  }, [isMobile, chatType, selectedUserId, selectedGroup]);
 
   useEffect(() => {
     const onGroupUpdatedSocket = ({ group }: { group: any }) => {
@@ -699,6 +758,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
         setActiveMenu,
         sidebarWidth,
         setSidebarWidth,
+        isMobile,
+        showSidebar,
+        setShowSidebar,
+        mobileChatOpen,
+        setMobileChatOpen,
         text,
         setText,
         search,

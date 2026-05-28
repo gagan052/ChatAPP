@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import "./ChatArea.css";
 import { socket } from "../../services/socket";
 import UploadProgress from "../UploadProgress/UploadProgress";
+import { useChatContext } from "../../app/ChatContext";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -100,6 +101,8 @@ export default function ChatArea({
   onGroupDeleted,
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { isMobile, setMobileChatOpen, setShowSidebar } = useChatContext();
 
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -238,16 +241,15 @@ export default function ChatArea({
 
   const headerInitials = headerName ? getInitials(headerName) : "";
 
-const isOnline =
-  chatType === "private" &&
-  selectedUserId &&
-  onlineUsers.includes(selectedUserId);
+  const isOnline =
+    chatType === "private" &&
+    selectedUserId &&
+    onlineUsers.includes(selectedUserId);
 
   return (
     <div className="chat-area">
       {headerName ? (
         <>
-          {/* Header */}
           <div
             className="chat-header"
             style={{
@@ -256,6 +258,19 @@ const isOnline =
               alignItems: "center",
             }}
           >
+            {/* Header */}
+            {isMobile && (
+              <button
+                className="mobile-back-btn"
+                onClick={() => {
+                  setMobileChatOpen(false);
+                  setShowSidebar(true);
+                }}
+              >
+                <i className="fa-solid fa-arrow-left"></i>
+              </button>
+            )}
+
             <div
               onClick={() => setShowInfoModal(true)}
               style={{
@@ -271,9 +286,6 @@ const isOnline =
                   chatType === "group" ? "group-avatar" : ""
                 }`}
                 style={{
-                  width: "45px",
-                  height: "45px",
-                  borderRadius: "50%",
                   backgroundImage:
                     chatType === "private" && selectedUserObj?.profilePic
                       ? `url(${selectedUserObj.profilePic})`
@@ -314,23 +326,26 @@ const isOnline =
               onClick={handleClear}
               title="Clear all messages"
               style={{
-                background: "none",
-                border: "none",
+                background: "red",
+
+                border: "",
+                borderRadius: "5px",
                 cursor: "pointer",
                 padding: "8px",
-                color: "var(--color-text-faint)",
+                color: "white",
                 transition: "color 0.2s",
               }}
             >
               Clear Chat{" "}
               <i
                 className="fa-solid fa-trash"
-                style={{ color: "rgb(24, 60, 233)", fontSize: "20px" }}
+                style={{ color: "rgb(24, 60, 233)", fontSize: "13px" }}
               ></i>
             </button>
           </div>
 
           {/* Messages */}
+
           <div className="messages">
             {messages.map((m, i) => {
               const senderObj = m.sender;
@@ -442,7 +457,6 @@ const isOnline =
                                     </div>
                                   </div>
                                 </a>
-
                               )}
                               {m.text && (
                                 <div style={{ marginTop: "8px" }}>{m.text}</div>

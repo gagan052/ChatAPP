@@ -1,4 +1,5 @@
-import './SearchBar.css';
+// import './SearchBar.css';
+import '../../pages/chat/chat.css';
 
 type SearchBarProps = {
   value: string;
@@ -13,19 +14,14 @@ const SearchBar = ({
 }: SearchBarProps) => {
 
   return (
-    <div className="w-full p-2 border-b border-blue-500">
-
+    <div className="searchbar-container">
       <input
         type="text"
-
         value={value}
-
         onChange={(e) =>
           onChange(e.target.value)
         }
-
         placeholder={placeholder}
-
         className="searchbar"
       />
     </div>

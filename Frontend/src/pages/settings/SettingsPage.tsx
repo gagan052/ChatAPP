@@ -1,131 +1,166 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { uploadProfilePic } from "../../features/auth/api";
-import { useAuth } from "../../features/auth/hooks";
-import { toast } from "react-toastify";
+import { useState } from "react";
+import {
+  FaRegHeart,
+  FaRegStar,
+  FaHistory,
+  FaUserLock,
+  FaLock,
+  FaComments,
+  FaBell,
+  FaArrowUp,
+  FaQuestionCircle,
+  FaCamera,
+} from "react-icons/fa";
+
 import "./settings.css";
 
 export default function SettingsPage() {
-  const navigate = useNavigate();
-  const { updateProfilePic } = useAuth();
+  const [selectedMenu, setSelectedMenu] = useState("Profile");
 
-  const getCookie = (name: string) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-
-    if (parts.length === 2) {
-      return parts.pop()?.split(";").shift();
-    }
-
-    return null;
-  };
-
-  const userCookie = getCookie("user");
-
-  let currentUser = null;
-
-  try {
-    currentUser = userCookie
-      ? JSON.parse(decodeURIComponent(userCookie))
-      : null;
-  } catch (err) {
-    console.error("Invalid user cookie");
-  }
-
-  if (!currentUser) {
-    navigate("/");
-    return null;
-  }
-
-  const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(
-    currentUser?.profilePic || null
-  );
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleUpload = async () => {
-    const file = fileInputRef.current?.files?.[0];
-    if (!file) {
-      toast.error("Please select an image first");
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const newPicUrl = await uploadProfilePic(file);
-      updateProfilePic(newPicUrl);
-      toast.success("Profile picture updated successfully!");
-      navigate("/chat");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to upload profile picture");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  console.log(currentUser?.username);
+  const menuItems = [
+    {
+      label: "Favourites",
+      icon: <FaRegHeart />,
+    },
+    {
+      label: "Starred",
+      icon: <FaRegStar />,
+    },
+    {
+      label: "Chat history",
+      icon: <FaHistory />,
+    },
+    {
+      label: "Account",
+      icon: <FaUserLock />,
+    },
+    {
+      label: "Privacy",
+      icon: <FaLock />,
+    },
+    {
+      label: "Chats",
+      icon: <FaComments />,
+    },
+    {
+      label: "Notifications",
+      icon: <FaBell />,
+    },
+    {
+      label: "Storage and data",
+      icon: <FaArrowUp />,
+    },
+    {
+      label: "Help",
+      icon: <FaQuestionCircle />,
+    },
+  ];
 
   return (
-    <div className="settings-container">
-      <div className="settings-card">
-        <button className="back-btn" onClick={() => navigate("/chat")}>
-          <i className="fa-solid fa-arrow-left"></i> Back to Chat
-        </button>
+    <div className="settings-overlay">
+      <div className="settings-modal">
 
-        <h2>Profile Settings</h2>
+        {/* LEFT SIDEBAR */}
 
-        <div className="profile-section">
-          <div className="profile-pic-container">
-            <div
-              className="profile-pic-preview"
-              style={{
-                backgroundImage: preview ? `url(${preview})` : "none",
-                backgroundColor: "var(--color-surface-2)",
-              }}
-            >
-              {!preview && <i className="fa-solid fa-user"></i>}
-            </div>
-            <button
-              className="change-pic-btn"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-            >
-              Select Image
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*"
-              style={{ display: "none" }}
+        <div className="settings-sidebar">
+          <div className="settings-header">
+            <h2>Settings</h2>
+          </div>
+
+          <div className="settings-search">
+            <input type="text" placeholder="Search" />
+          </div>
+
+          <div className="profile-mini-card">
+            <img
+              src="https://i.pravatar.cc/150?img=12"
+              alt="profile"
             />
+
+            <span>Gagan</span>
           </div>
 
-          <div className="user-info">
-            <p>
-              <strong>Username:</strong> {currentUser?.username}
-            </p>
+          <div className="settings-menu">
+            {menuItems.map((item) => (
+              <button
+                key={item.label}
+                className={`menu-item ${
+                  selectedMenu === item.label ? "active" : ""
+                }`}
+                onClick={() => setSelectedMenu(item.label)}
+              >
+                <span className="menu-icon">
+                  {item.icon}
+                </span>
+
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* RIGHT CONTENT */}
+
+        <div className="settings-content">
+          <div className="content-header">
+            <h2>Profile</h2>
           </div>
 
-          <button
-            className="save-btn"
-            onClick={handleUpload}
-            disabled={uploading}
-          >
-            {uploading ? "Uploading..." : "Save Changes"}
+          <div className="profile-photo-section">
+            <div className="profile-photo-wrapper">
+              <img
+                src="https://i.pravatar.cc/300?img=12"
+                alt="profile"
+              />
+
+              <button className="edit-photo-btn">
+                <FaCamera />
+              </button>
+            </div>
+
+            <button className="edit-photo-text">
+              Edit photo
+            </button>
+          </div>
+
+          <div className="settings-fields">
+
+            <div className="field-group">
+              <label>About</label>
+
+              <div className="field-box">
+                <span>
+                  Hey there! I am using Zynk.
+                </span>
+              </div>
+            </div>
+
+            <div className="field-group">
+              <label>Name</label>
+
+              <div className="field-box">
+                <span>Gagan</span>
+              </div>
+            </div>
+
+            <div className="field-group">
+              <label>Phone number</label>
+
+              <div className="field-box">
+                <span>+91 97284 22008</span>
+              </div>
+            </div>
+          </div>
+
+          <button className="logout-btn">
+            Log out
           </button>
+
+          <div className="settings-footer">
+            <button className="done-btn">
+              Done
+            </button>
+          </div>
         </div>
       </div>
     </div>
