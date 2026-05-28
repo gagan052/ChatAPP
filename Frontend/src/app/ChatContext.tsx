@@ -42,8 +42,8 @@ interface ChatContextType {
   setSelectedUserId: (id: string | null) => void;
   selectedGroup: any | null;
   setSelectedGroup: (group: any | null) => void;
-  activeTab: "chats" | "invitations";
-  setActiveTab: (tab: "chats" | "invitations") => void;
+  activeTab: "chats" | "invitations" | "groups";
+  setActiveTab: (tab: "chats" | "invitations" | "groups") => void;
   inviteCount: number;
   setInviteCount: (count: number | ((prev: number) => number)) => void;
   unreadCounts: Record<string, number>;

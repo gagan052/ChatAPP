@@ -24,7 +24,10 @@ const Sidebar: React.FC = () => {
     loadChats,
     setSearchResults,
     setSearch,
-  } = useChatContext();
+  } = useChatContext() as {
+    activeTab: "chats" | "invitations" | "groups" ;
+    [key: string]: any;
+  };
 
   const isResizing = React.useRef(false);
 
@@ -78,9 +81,6 @@ const Sidebar: React.FC = () => {
         width: isMobile ? "100vw" : `${sidebarWidth}px`,
       }}
     >
-      {/* {isMobile && showSidebar && (
-        <div className="mobile-overlay" onClick={() => setShowSidebar(false)} />
-      )} */}
 
       <SidebarHeader />
 
@@ -94,7 +94,7 @@ const Sidebar: React.FC = () => {
 
         <div className="list-of-user">
           <p className="list-section-label">Search Results</p>
-          {searchResults.map((u) => (
+          {searchResults.map((u: { id: string; username: string; profilePic?: string; inviteStatus: string }) => (
             <div key={u.id} className="user search-user">
               <div
                 className="user-avatar search-user-avatar"

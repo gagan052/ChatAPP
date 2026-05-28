@@ -11,8 +11,6 @@ export default function ChatPage() {
     selectedUserId,
     selectedGroup,
     isMobile,
-    showSidebar,
-    setShowSidebar,
     uploadingFile,
     messages,
     mobileChatOpen,
@@ -36,21 +34,6 @@ export default function ChatPage() {
 
   return (
     <div className="chat-container">
-
-
-      {/* {isMobile && !showSidebar && (
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setShowSidebar(true)}
-        >
-          <i class="fa-solid fa-angle-left"></i>
-        </button>
-      )} */}
-
-
-      {/* <Sidebar /> */}
-
-      
 
       {/* MOBILE */}
   {isMobile ? (
