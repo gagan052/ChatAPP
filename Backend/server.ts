@@ -9,6 +9,7 @@ import { handleSockets } from "./src-back/sockets/socketHandler.ts";
 import { printRoutes } from "./src-back/utils/printRoutes.ts";
 
 dotenv.config();
+const PORT = process.env.PORT || 3001;
 
 const server = http.createServer(app);
 
@@ -23,8 +24,10 @@ app.set("io", io);
 connectDB();
 handleSockets(io);
 
-server.listen(3001, () => {
-  console.log(chalk.yellow("Server running on port 3001"));
+server.listen(PORT, () => {
+  console.log(
+    chalk.yellow(`Server running on port ${PORT}`)
+  );
 
-  printRoutes(app); //  print all routes
+  printRoutes(app);
 });
