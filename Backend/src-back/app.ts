@@ -11,6 +11,8 @@ import cookieParser from "cookie-parser";
 import { protect } from "./middlewares/authMiddleware";
 
 const app = express();
+app.set("trust proxy", 1);
+
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -23,10 +25,7 @@ app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
 
-    if (
-      allowedOrigins.indexOf(origin) !== -1 ||
-      origin.endsWith(".onrender.com")
-    ) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log("Blocked by CORS:", origin);
