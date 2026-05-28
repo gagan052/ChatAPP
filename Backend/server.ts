@@ -13,11 +13,22 @@ const PORT = process.env.PORT || 3001;
 
 const server = http.createServer(app);
 
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "https://chatapp-1-i5is.onrender.com",
+  "https://zynk-gagan.onrender.com",
+];
+
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST"],
   },
 });
+
 
 app.set("io", io);
 
