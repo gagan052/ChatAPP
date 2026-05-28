@@ -216,7 +216,7 @@ export const login = async (req: any, res: any) => {
     const isProduction = process.env.NODE_ENV === "production";
 
     res.cookie("token", token, {
-      httpOnly: true,
+      httpOnly: false,
       secure: isProduction,
       sameSite: isProduction ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -263,6 +263,7 @@ export const login = async (req: any, res: any) => {
   }
 };
 
+// LOGOUT
 export const logout = async (req: any, res: any) => {
 
   const isProduction =
@@ -286,8 +287,7 @@ export const logout = async (req: any, res: any) => {
   });
 };
 
-
-
+// GET ME
 export const getMe = async (req: any, res: any) => {
   try {
     const user = await User.findById(req.user.id).select("-password");

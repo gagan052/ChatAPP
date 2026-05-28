@@ -43,6 +43,7 @@ export const notifyUserSockets = async (
 };
 
 export const handleSockets = (io: Server) => {
+  
   io.on("connection", (socket: Socket) => {
     console.log(chalk.yellow("Socket connected:"), socket.id);
 
