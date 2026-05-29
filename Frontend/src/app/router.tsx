@@ -6,6 +6,7 @@ import ChatPage from "../pages/chat/ChatPage";
 import SettingsPage from "../pages/settings/SettingsPage";
 import { api } from "../services/http";
 import Layout from "./Layout";
+import LandingPage from "../pages/landingPage/LandingPage";
 
 // ================= PROTECTED ROUTE =================
 
@@ -53,6 +54,10 @@ const ProtectedRoute = ({ children }: any) => {
 export const router = createHashRouter([
   {
     path: "/",
+    element: <LandingPage />,
+  },
+  {
+    path: "/login",
     element: <LoginPage />,
   },
 
