@@ -166,11 +166,11 @@ const Sidebar: React.FC = () => {
         )}
       </div>
 
-      <div className="footer">
+      {/* <div className="footer">
         <button onClick={() => setActiveTab("chats")}>Go Home</button>
 
         <button>hsj</button>
-      </div>
+      </div> */}
 
       <div className="resizer" onMouseDown={startResizing} />
     </div>
