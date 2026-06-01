@@ -119,6 +119,7 @@ router.post(
   protect,
   handleSingleUpload("image"),
   async (req: any, res) => {
+    // console.log("FILE:", req.file);
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No image file uploaded" });

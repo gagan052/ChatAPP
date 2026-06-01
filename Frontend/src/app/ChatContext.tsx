@@ -135,7 +135,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({
   const [chatUsers, setChatUsers] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [sidebarWidth, setSidebarWidth] = useState(380);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showSidebar, setShowSidebar] = useState(window.innerWidth > 768);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);

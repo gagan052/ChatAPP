@@ -316,3 +316,167 @@
     display: none;
   }
 }
+
+//
+
+
+.settings-page {
+  min-height: 100vh;
+  background: #0d0f12;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 20px;
+}
+
+/* .settings-card {
+  width: 100%;
+  max-width: 700px;
+
+  background: #111418;
+
+  border: 1px solid #2563eb;
+
+  border-radius: 20px;
+
+  overflow: hidden;
+} */
+
+.settings-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  padding: 20px;
+
+  border-bottom: 1px solid #1f2937;
+}
+
+.settings-topbar h2 {
+  color: white;
+}
+
+.back-btn {
+  width: 40px;
+  height: 40px;
+
+  border-radius: 10px;
+
+  border: 1px solid #2563eb;
+
+  background: transparent;
+
+  color: white;
+
+  cursor: pointer;
+}
+
+.profile-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 40px 20px;
+}
+
+.avatar-wrapper {
+  position: relative;
+}
+
+.profile-avatar,
+.avatar-fallback {
+  width: 140px;
+  height: 140px;
+
+  border-radius: 50%;
+
+  border: 3px solid #2563eb;
+}
+
+.profile-avatar {
+  object-fit: cover;
+}
+
+.avatar-fallback {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: #2563eb;
+
+  color: white;
+
+  font-size: 40px;
+  font-weight: bold;
+}
+
+.camera-btn {
+  position: absolute;
+
+  right: 5px;
+  bottom: 5px;
+
+  width: 42px;
+  height: 42px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #2563eb;
+
+  color: white;
+
+  cursor: pointer;
+}
+
+.save-btn {
+  margin-top: 20px;
+
+  border: none;
+
+  background: #2563eb;
+
+  color: white;
+
+  padding: 12px 20px;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+}
+
+.info-section {
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.info-box {
+  background: #161b22;
+  width: 50%;
+  border: 1px solid #1f2937;
+
+  border-radius: 12px;
+
+  padding: 16px;
+}
+
+.info-box label {
+  display: block;
+
+  color: #94a3b8;
+
+  margin-bottom: 8px;
+  
+}
+
+.info-box span {
+  color: white;
+  
+}
+

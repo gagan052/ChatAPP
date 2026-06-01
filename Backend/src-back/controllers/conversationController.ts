@@ -33,12 +33,21 @@ export const getUserConversations = async (req: any, res: any) => {
       .populate("lastMessage", "text fileUrl fileType createdAt sender")
       .sort({ updatedAt: -1 });
 
+    // console.log(
+    //   conversations[0].participants.map((p: any) => ({
+    //     username: p.username,
+    //     profilePic: p.profilePic,
+    //   }))
+    // );
+
     // 3. Transform into frontend-ready shape
     const mapped = conversations
       .map((conv: any) => {
         const other = conv.participants.find(
           (p: any) => String(p._id) !== String(userId)
         );
+
+        // console.log("OTHER USER:", other);
 
         if (!other) return null;
 
@@ -54,6 +63,9 @@ export const getUserConversations = async (req: any, res: any) => {
         };
       })
       .filter(Boolean);
+
+    // console.log("Mapped conversations:");
+    // console.dir(mapped, { depth: null });
 
     // 4. Cache
     await redis.set(cacheKey, mapped, {

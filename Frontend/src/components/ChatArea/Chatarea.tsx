@@ -108,6 +108,25 @@ export default function ChatArea({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
+  const getDisplayUrl = (url: string, type: string | null) => {
+    if (!url) return url;
+    const isPdf = type === "application/pdf" || url.toLowerCase().endsWith(".pdf");
+
+    if (isPdf && url.includes("cloudinary.com")) {
+      // Cloudinary 'raw' resources force download unless 'fl_inline' is present.
+      // We inject it into the path correctly.
+      if (!url.includes("fl_inline")) {
+        // Find the index after /upload/ to insert the flag
+        const uploadIndex = url.indexOf("/upload/");
+        if (uploadIndex !== -1) {
+          const insertPos = uploadIndex + "/upload/".length;
+          return url.slice(0, insertPos) + "fl_inline/" + url.slice(insertPos);
+        }
+      }
+    }
+    return url;
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
   }, [messages]);
@@ -411,7 +430,7 @@ export default function ChatArea({
                             <>
                               {m.fileType?.startsWith("image") ? (
                                 <a
-                                  href={m.fileUrl}
+                                  href={getDisplayUrl(m.fileUrl, m.fileType)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
@@ -423,7 +442,7 @@ export default function ChatArea({
                                 </a>
                               ) : m.fileType?.startsWith("video") ? (
                                 <a
-                                  href={m.fileUrl}
+                                  href={getDisplayUrl(m.fileUrl, m.fileType)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
@@ -435,7 +454,7 @@ export default function ChatArea({
                                 </a>
                               ) : (
                                 <a
-                                  href={m.fileUrl}
+                                  href={getDisplayUrl(m.fileUrl, m.fileType)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="file-card"
@@ -457,6 +476,7 @@ export default function ChatArea({
                                     </div>
                                   </div>
                                 </a>
+                                
                               )}
                               {m.text && (
                                 <div style={{ marginTop: "8px" }}>{m.text}</div>
