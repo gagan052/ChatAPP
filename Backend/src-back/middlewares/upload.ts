@@ -9,8 +9,9 @@ const storage = new CloudinaryStorage({
     
     return {
       folder: "chat-app",
-      resource_type: "auto", // Let Cloudinary decide, but we force flags next
-      flags: isPdf ? "inline" : undefined,
+      // Force 'image' for PDFs to enable browser-inline viewing
+      resource_type: isPdf ? "image" : "auto", 
+      // Force format to 'pdf' so Cloudinary provides the correct MIME type headers
       format: isPdf ? "pdf" : undefined,
       public_id: `${Date.now()}-${file.originalname.replace(/\.[^/.]+$/, "")}`,
     };

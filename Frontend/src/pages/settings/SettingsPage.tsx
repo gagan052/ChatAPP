@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { FaCamera, FaArrowLeft, FaSignOutAlt } from "react-icons/fa";
+import { FaCamera, FaArrowLeft } from "react-icons/fa";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/http";
@@ -80,13 +80,6 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const logout = () => {
-    Cookies.remove("token");
-    Cookies.remove("user");
-
-    navigate("/login");
   };
 
   return (

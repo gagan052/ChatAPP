@@ -108,21 +108,29 @@ export default function ChatArea({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
-  const getDisplayUrl = (url: string, type: string | null) => {
+  const getDisplayUrl = (url: string, type: string | null | undefined) => {
     if (!url) return url;
     const isPdf = type === "application/pdf" || url.toLowerCase().endsWith(".pdf");
 
     if (isPdf && url.includes("cloudinary.com")) {
-      // Cloudinary 'raw' resources force download unless 'fl_inline' is present.
-      // We inject it into the path correctly.
-      if (!url.includes("fl_inline")) {
-        // Find the index after /upload/ to insert the flag
-        const uploadIndex = url.indexOf("/upload/");
+      let updatedUrl = url;
+      // 1. Ensure we are using the 'image' path which supports inline viewing
+      updatedUrl = updatedUrl.replace("/raw/upload/", "/image/upload/");
+
+      // 2. Inject the inline flag correctly after /upload/
+      if (!updatedUrl.includes("fl_inline")) {
+        const uploadIndex = updatedUrl.indexOf("/upload/");
         if (uploadIndex !== -1) {
           const insertPos = uploadIndex + "/upload/".length;
-          return url.slice(0, insertPos) + "fl_inline/" + url.slice(insertPos);
+          updatedUrl = updatedUrl.slice(0, insertPos) + "fl_inline/" + updatedUrl.slice(insertPos);
         }
       }
+
+      // 3. Force .pdf extension at the end (Cloudinary requirement for image-type PDFs)
+      if (!updatedUrl.toLowerCase().endsWith(".pdf")) {
+        updatedUrl += ".pdf";
+      }
+      return updatedUrl;
     }
     return url;
   };
