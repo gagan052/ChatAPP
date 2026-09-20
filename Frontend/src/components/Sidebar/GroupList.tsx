@@ -79,7 +79,7 @@ const GroupList: React.FC = () => {
                           handleDeleteGroup(g._id);
                           toggleMenu(null as any);
                         }}
-                        style={{ color: "var(--color-error)" }}
+                        style={{ color: "var(--color-danger)" }}
                       >
                         Delete Group
                       </button>

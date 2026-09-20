@@ -421,9 +421,11 @@ export default function ChatInfoModal({
                 style={{
                   flex: 1,
                   padding: "8px 12px",
-                  border: "1px solid var(--color-border)",
+                  border: "1px solid var(--color-surface-2)",
                   borderRadius: "8px",
                   fontSize: "16px",
+                  background: "var(--color-base)",
+                  color: "var(--color-text-primary)",
                 }}
               />
               <button
@@ -610,11 +612,11 @@ export default function ChatInfoModal({
                             flexShrink: 0,
                             padding: "6px 10px",
                             fontSize: "12px",
-                            border: "1px solid var(--color-border)",
+                            border: "1px solid var(--color-danger-border)",
                             borderRadius: "8px",
-                            background: "var(--color-surface-2)",
+                            background: "var(--color-danger-bg)",
                             cursor: loading ? "not-allowed" : "pointer",
-                            color: "var(--color-text)",
+                            color: "var(--color-danger)",
                           }}
                         >
                           Remove
@@ -635,17 +637,12 @@ export default function ChatInfoModal({
           {chatType === "group" && !isAdmin && (
             <button
               type="button"
+              className="modal-leave-group"
               onClick={handleLeaveGroup}
               disabled={loading}
               style={{
                 width: "100%",
-                padding: "12px",
-                borderRadius: "8px",
-                border: "none",
-                background: "#e67e22",
-                color: "white",
                 cursor: loading ? "not-allowed" : "pointer",
-                fontWeight: 600,
               }}
             >
               Leave Group
@@ -655,17 +652,12 @@ export default function ChatInfoModal({
           {chatType === "group" && isAdmin && (
             <button
               type="button"
+              className="modal-delete-group"
               onClick={handleDeleteGroup}
               disabled={loading}
               style={{
                 width: "100%",
-                padding: "12px",
-                borderRadius: "8px",
-                border: "none",
-                background: "#c0392b",
-                color: "white",
                 cursor: loading ? "not-allowed" : "pointer",
-                fontWeight: 600,
               }}
             >
               Delete group

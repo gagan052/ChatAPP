@@ -59,7 +59,12 @@ const InvitationList = ({ onBack, onAccept }: Props) => {
       <h2 className="invite-title">Invitations</h2>
 
       {invitations.length === 0 && (
-        <p className="invite-empty">No pending invitations</p>
+        <div className="invite-empty-state">
+          <div className="invite-empty-icon">
+            <i className="fa-regular fa-bell"></i>
+          </div>
+          <p className="invite-empty">No pending invitations</p>
+        </div>
       )}
 
       {invitations.map((inv: any) => (

@@ -23,7 +23,30 @@
 .invite-empty {
   font-size: var(--font-size-md);
   color: var(--color-text-faint);
-  padding: 8px 10px;
+  padding: 0;
+}
+
+.invite-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-md);
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.invite-empty-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--color-text-faint);
 }
 
 .invite-card {
@@ -33,10 +56,13 @@
   padding: 9px 10px;
   border-radius: var(--radius-lg);
   border: 1px solid transparent;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.invite-card:hover { background: rgba(255,255,255,0.03); }
+.invite-card:hover {
+  background: var(--color-surface-3);
+  border-color: var(--color-surface-2);
+}
 
 .invite-avatar {
   width: 34px;
@@ -50,6 +76,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
 }
 
 .invite-username {

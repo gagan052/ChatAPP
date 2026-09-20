@@ -7,24 +7,27 @@
 }
 
 .file-upload-box {
-  background: #2f2f2f;
-  padding: 10px;
-  border-radius: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
   width: 220px;
-  color: white;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
 }
 
 .progress-bar {
   height: 6px;
-  background: #444;
-  border-radius: 5px;
+  background: var(--color-surface-2);
+  border-radius: var(--radius-full);
   margin: 8px 0;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: #4caf50;
+  background: var(--color-accent);
   width: 0%;
   transition: width 0.3s ease;
 }

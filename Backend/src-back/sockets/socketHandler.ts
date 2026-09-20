@@ -51,17 +51,21 @@ export const handleSockets = (io: Server) => {
     socket.on("join", async ({ userId }) => {
       socket.data.userId = userId;
 
-      await redis.set(`chatapp:socket:${socket.id}:user`, userId);
+      try {
+        await redis.set(`chatapp:socket:${socket.id}:user`, userId);
 
-      await redis.sadd(`chatapp:user:${userId}:sockets`, socket.id);
+        await redis.sadd(`chatapp:user:${userId}:sockets`, socket.id);
 
-      await redis.sadd("chatapp:online_users", userId);
+        await redis.sadd("chatapp:online_users", userId);
 
-      const online = await getOnlineUsers();
+        const online = await getOnlineUsers();
 
-      io.emit("online_users", online);
+        io.emit("online_users", online);
 
-      console.log(`User joined: ${userId}`);
+        console.log(`User joined: ${userId}`);
+      } catch (err) {
+        console.error(chalk.red("join error:"), err);
+      }
     });
 
     // ── Private message ──
@@ -501,21 +505,22 @@ export const handleSockets = (io: Server) => {
 
     // ── Invitations ──
     socket.on("send_invitation", async ({ toUserId }) => {
-      const senderId = await redis.get(`chatapp:socket:${socket.id}:user`);
-
-      if (!senderId || !toUserId) {
-        console.log("hello");
-        return;
-      }
-
-      console.log("Invitation socket backend", {
-        senderId,
-        toUserId,
-      });
-
-      const receiverId = typeof toUserId === "object" ? toUserId.id : toUserId;
-
       try {
+        const senderId = await redis.get(`chatapp:socket:${socket.id}:user`);
+
+        if (!senderId || !toUserId) {
+          console.log("hello");
+          return;
+        }
+
+        console.log("Invitation socket backend", {
+          senderId,
+          toUserId,
+        });
+
+        const receiverId =
+          typeof toUserId === "object" ? toUserId.id : toUserId;
+
         // ───── CHECK EXISTING CONTACT ─────
         const existingConversation = await Conversation.findOne({
           type: "private",

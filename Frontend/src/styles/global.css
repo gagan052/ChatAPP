@@ -2,57 +2,47 @@
    DESIGN TOKENS — change these to retheme the entire app
    ============================================================ */
 :root {
-  /* Core palette */
-  /* --color-base:        #aef49f;   page background #142a0f */
+  /* Core palette — deep navy dark theme, blue accent (matches landing page) */
+  --color-base:        #0a0e17;   /* page background */
 
-  --color-base:        #161717;
-  
-  /* --color-surface:     #dfe7f3; */
+  --color-surface:     #121826;   /* cards, sidebar, headers */
 
-  --color-surface:     #161717;
-
-
-  --color-surface-nav-bar: #93c0f7;
-  /* --color-other-char-bar: #a8aba8;   cards, sidebar, headers */
-  --color-other-char-bar: #154D37;
-  --color-chat-bar:    #84cc6c;
-  --color-surface-2:   #3589f0;   /* borders, dividers */
-  --color-surface-3:   #f45916;   /* hover states */
+  --color-surface-nav-bar: #121826;   /* chat header / input bar */
+  --color-other-char-bar: #1c2436;    /* received message bubble */
+  --color-chat-bar:    #1c2436;
+  --color-surface-2:   rgba(255, 255, 255, 0.10);   /* borders, dividers */
+  --color-surface-3:   rgba(59, 130, 246, 0.14);    /* hover states */
 
   /* Text */
-  /* --color-text-primary:   #060606; */
+  --color-text-primary:   #f4f6fb;  /* headings, main content */
 
-  --color-text-primary:   #f8f5f5;
+  --color-text-login :    #f4f6fb;  /* headings, main content */
 
-   --color-text-primary-black:   #050505;
+  --color-text-secondary: #cbd5e1;  /* body text */
 
-
-  --color-text-login :    #f6f2f2;  /* headings, main content #f1f5f9*/
-
-  --color-text-secondary: #f9fbfb;  /* body text #e2e8f0 */
-
-  --color-text-chat-bar:  #1e1f1f;
-  --color-text-muted:     #070707;  /* placeholders, labels */
-  --color-text-faint:     #687588;  /* timestamps, hints */
+  --color-text-chat-bar:  #f4f6fb;
+  --color-text-muted:     #8b93a7;  /* placeholders, labels */
+  --color-text-faint:     #64708a;  /* timestamps, hints */
 
   /* Accent — primary action color */
-  --color-accent:          #1d4ed8;  /* buttons, sent bubbles */
+  --color-accent:          #3b82f6;  /* buttons, sent bubbles */
   --color-accent-hover:    #2563eb;
+  --color-accent-dark:     #1d4ed8;
   --color-accent-light:    #4d95f3;  /* avatar backgrounds */
-  --color-accent-text:     #0418f5;  /* avatar initials, links */
+  --color-accent-text:     #ffffff;  /* avatar initials, links */
 
   /* Group accent */
-  --color-group:           #4c1fee; /* #2d1f5e */
-  --color-group-text:      #bca9f6;
-  --color-group-name:      #4c1fee;
+  --color-group:           #7c3aed;
+  --color-group-text:      #ddd6fe;
+  --color-group-name:      #a78bfa;
 
   /* Semantic */
-  --color-online:    #1da54f;   /* green dot #22c55e*/
-  --color-online-status: #373636;
-  --color-danger:    #f80707;   /* logout, errors #f87171*/
-  --color-danger-bg: rgba(241, 46, 46, 0.1);
-  --color-danger-border: rgba(246, 5, 5, 0.4);
-  --color-info:      #7a99be;   /* links, info text #60a5fa*/
+  --color-online:    #22c55e;
+  --color-online-status: #6b7280;
+  --color-danger:    #ef4444;
+  --color-danger-bg: rgba(239, 68, 68, 0.12);
+  --color-danger-border: rgba(239, 68, 68, 0.35);
+  --color-info:      #60a5fa;   /* links, info text */
 
   /* Border radius */
   --radius-sm:   6px;
@@ -138,30 +128,3 @@ a:hover {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-surface-2); border-radius: var(--radius-full); }
-
-
-
-
-
-
-/* * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Segoe UI", sans-serif;
-}
-
-body {
-  background: #0f172a;
-  color: white;
-}
-
-input {
-  outline: none;
-  border: none;
-}
-
-button {
-  cursor: pointer;
-  border: none;
-} */

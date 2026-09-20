@@ -90,7 +90,7 @@ const UserList: React.FC = () => {
                           {pinnedChats.includes(u.chatId) ? "Unpin Chat" : "Pin Chat"}
                         </button>
                         
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteChat(u.chatId); }} style={{ color: "var(--color-error)" }}>
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteChat(u.chatId); }} style={{ color: "var(--color-danger)" }}>
                           Delete Chat
                         </button>
 

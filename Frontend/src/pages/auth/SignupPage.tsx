@@ -19,45 +19,74 @@ export default function SignupPage() {
 
   return (
     <div className="auth-container">
+      <div className="auth-glow auth-glow-1" aria-hidden="true" />
+      <div className="auth-glow auth-glow-2" aria-hidden="true" />
+
       <form className="auth-card" onSubmit={handleSubmit}>
-        <h2>Create Account </h2>
+        <div className="auth-brand">
+          <div className="auth-brand-icon">⚡</div>
+          <span className="auth-brand-text">
+            Zynk<span>Chat</span>
+          </span>
+        </div>
 
-        <input
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
+        <div className="auth-heading">
+          <h2>Create Account</h2>
+          <p className="auth-subtitle">Join ZynkChat and start chatting instantly</p>
+        </div>
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+        <div className="auth-field">
+          <label htmlFor="signup-username">Username</label>
+          <input
+            id="signup-username"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+        </div>
 
-        <input
-          type="tel"
-          placeholder="Phone Number"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          required
-        />
+        <div className="auth-field">
+          <label htmlFor="signup-email">Email</label>
+          <input
+            id="signup-email"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div className="auth-field">
+          <label htmlFor="signup-phone">Phone Number</label>
+          <input
+            id="signup-phone"
+            type="tel"
+            placeholder="Phone Number"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+        </div>
 
-        <button type="submit" disabled={loading}>
+        <div className="auth-field">
+          <label htmlFor="signup-password">Password</label>
+          <input
+            id="signup-password"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <button type="submit" className="auth-submit" disabled={loading}>
           {loading ? "Signing up..." : "Signup"}
         </button>
 
-        <p>
+        <p className="auth-switch">
           Already have an account? <Link to="/login">Login</Link>
         </p>
       </form>

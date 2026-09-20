@@ -1,3 +1,34 @@
 .modal-cancel{
     color: var(--color-text-primary);
 }
+
+.modal-leave-group,
+.modal-delete-group {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  transition: filter 0.15s, background 0.15s;
+}
+
+.modal-leave-group {
+  background: #e67e22;
+}
+
+.modal-leave-group:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.modal-delete-group {
+  background: var(--color-danger);
+}
+
+.modal-delete-group:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.modal-leave-group:disabled,
+.modal-delete-group:disabled {
+  opacity: 0.6;
+}

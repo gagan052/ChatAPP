@@ -1,9 +1,6 @@
 import { verifyToken } from "../utils/jwt";
 
 export const protect = (req: any, res: any, next: any) => {
-  
-  console.log("Cookies:", req.cookies);
-  console.log("Auth:", req.headers.authorization);
   try {
     let token = req.cookies?.token;
 

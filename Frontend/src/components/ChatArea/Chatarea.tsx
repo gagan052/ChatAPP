@@ -12,6 +12,7 @@ import "./ChatArea.css";
 import { socket } from "../../services/socket";
 import UploadProgress from "../UploadProgress/UploadProgress";
 import { useChatContext } from "../../app/ChatContext";
+import { BASE_URL } from "../../features/chat/api";
 
 function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -108,25 +109,26 @@ export default function ChatArea({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 
-  const getDisplayUrl = (url: string, type: string | null | undefined) => {
+  const getDisplayUrl = (
+    url: string,
+    type: string | null | undefined,
+    fileName?: string
+  ) => {
     if (!url) return url;
     const isPdf = type === "application/pdf" || url.toLowerCase().endsWith(".pdf");
 
     if (isPdf && url.includes("cloudinary.com")) {
-      let updatedUrl = url;
-      // 1. Ensure we are using the 'image' path which supports inline viewing
-      updatedUrl = updatedUrl.replace("/raw/upload/", "/image/upload/");
-
-      // 2. Inject the inline flag correctly after /upload/
-      if (!updatedUrl.includes("fl_inline")) {
-        const uploadIndex = updatedUrl.indexOf("/upload/");
-        if (uploadIndex !== -1) {
-          const insertPos = uploadIndex + "/upload/".length;
-          updatedUrl = updatedUrl.slice(0, insertPos) + "fl_inline/" + updatedUrl.slice(insertPos);
-        }
+      if (url.includes("/raw/upload/")) {
+        // This Cloudinary account stores PDFs as "raw" resources (PDF/ZIP delivery
+        // to the "image" pipeline is restricted), and raw delivery always forces
+        // Content-Disposition: attachment with no URL flag to override it. Proxy
+        // through our backend so the PDF opens inline with the right filename/type.
+        const name = encodeURIComponent(fileName || "file.pdf");
+        return `${BASE_URL}/api/messages/file-proxy?url=${encodeURIComponent(url)}&name=${name}`;
       }
 
-      // 3. Force .pdf extension at the end (Cloudinary requirement for image-type PDFs)
+      // Already an image-type PDF — Cloudinary serves these inline by default.
+      let updatedUrl = url;
       if (!updatedUrl.toLowerCase().endsWith(".pdf")) {
         updatedUrl += ".pdf";
       }
@@ -352,22 +354,9 @@ export default function ChatArea({
               className="clear-chat-btn"
               onClick={handleClear}
               title="Clear all messages"
-              style={{
-                background: "red",
-
-                border: "",
-                borderRadius: "5px",
-                cursor: "pointer",
-                padding: "8px",
-                color: "white",
-                transition: "color 0.2s",
-              }}
             >
               Clear Chat{" "}
-              <i
-                className="fa-solid fa-trash"
-                style={{ color: "rgb(24, 60, 233)", fontSize: "13px" }}
-              ></i>
+              <i className="fa-solid fa-trash"></i>
             </button>
           </div>
 
@@ -438,7 +427,7 @@ export default function ChatArea({
                             <>
                               {m.fileType?.startsWith("image") ? (
                                 <a
-                                  href={getDisplayUrl(m.fileUrl, m.fileType)}
+                                  href={getDisplayUrl(m.fileUrl, m.fileType, m.fileName)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
@@ -450,7 +439,7 @@ export default function ChatArea({
                                 </a>
                               ) : m.fileType?.startsWith("video") ? (
                                 <a
-                                  href={getDisplayUrl(m.fileUrl, m.fileType)}
+                                  href={getDisplayUrl(m.fileUrl, m.fileType, m.fileName)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
@@ -462,7 +451,7 @@ export default function ChatArea({
                                 </a>
                               ) : (
                                 <a
-                                  href={getDisplayUrl(m.fileUrl, m.fileType)}
+                                  href={getDisplayUrl(m.fileUrl, m.fileType, m.fileName)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="file-card"
@@ -519,7 +508,7 @@ export default function ChatArea({
                                     <i
                                       className="fa-solid fa-pen-to-square"
                                       style={{
-                                        color: "rgb(122, 140, 231)",
+                                        color: "rgba(255, 255, 255, 0.85)",
                                         fontSize: "13px",
                                       }}
                                     ></i>
@@ -535,7 +524,7 @@ export default function ChatArea({
                               <i
                                 className="fa-solid fa-trash"
                                 style={{
-                                  color: "rgb(122, 140, 231)",
+                                  color: "rgba(255, 255, 255, 0.85)",
                                   fontSize: "13px",
                                 }}
                               ></i>
@@ -569,7 +558,7 @@ export default function ChatArea({
                               return (
                                 <i
                                   className="fa-solid fa-check-double"
-                                  style={{ color: "#34b7f1" }}
+                                  style={{ color: "#dff4ff" }}
                                   title="Seen"
                                 ></i>
                               );
@@ -582,7 +571,7 @@ export default function ChatArea({
                               return (
                                 <i
                                   className="fa-solid fa-check-double"
-                                  style={{ color: "var(--color-text-faint)" }}
+                                  style={{ color: "rgba(255, 255, 255, 0.65)" }}
                                   title="Delivered"
                                 ></i>
                               );
@@ -608,7 +597,8 @@ export default function ChatArea({
                 display: "flex",
                 alignItems: "center",
                 gap: "12px",
-                borderTop: "1px solid var(--color-border)",
+                background: "var(--color-surface-nav-bar)",
+                borderTop: "1px solid var(--color-surface-2)",
               }}
             >
               <i
